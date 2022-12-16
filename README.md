@@ -31,3 +31,7 @@ try template.description.write(to: file, atomically: true, encoding: .utf8)
 
 CodeTemplate just split source file by lines.
 It doesn't see any syntax like comments, so it's target language agnostic.
+
+# Example
+
+- [TypeScriptAST](https://github.com/omochi/TypeScriptAST)
