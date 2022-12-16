@@ -60,7 +60,6 @@ final class BasicTests: XCTestCase {
         t["aaa"] = ("""
                 func foo2() {}
                 func foo3() {}
-
             """
         )
 

@@ -73,10 +73,24 @@ public struct Template: CustomStringConvertible {
         for fragment in fragments {
             switch fragment {
             case .text(let text): result += text
-            case .placeholder(_, content: let text): result += text
+            case .placeholder(_, content: let text):
+                result += text.ensuringNewline()
             }
         }
 
         return result
+    }
+}
+
+extension String {
+    func ensuringNewline() -> String {
+        if let last = self.last {
+            switch last {
+            case .lf, .cr, .crlf: return self
+            default: break
+            }
+        }
+
+        return self + "\n"
     }
 }
