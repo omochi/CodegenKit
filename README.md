@@ -1,8 +1,12 @@
+# CodegenKit
+
+Swift code generation framework.
+
 # CodeTemplate
 
 Small library for support **in place** code generation.
 
-# Usage
+## Usage
 
 Write code as template with markers.
 

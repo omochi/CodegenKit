@@ -7,8 +7,8 @@ final class Parser {
     let lines: [String]
     var index: Int
 
-    func parse() -> Template {
-        var fragments: [Template.Fragment] = []
+    func parse() -> CodeTemplate {
+        var fragments: [CodeTemplate.Fragment] = []
         while true {
             guard let text = readTextFragment() else {
                 break
@@ -28,7 +28,7 @@ final class Parser {
                 )
             )
         }
-        return Template(fragments: fragments)
+        return CodeTemplate(fragments: fragments)
     }
 
     struct TextFragment {

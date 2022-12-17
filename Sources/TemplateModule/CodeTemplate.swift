@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Template: CustomStringConvertible {
+public struct CodeTemplate: CustomStringConvertible {
     enum Fragment: Hashable {
         case text(String)
         case placeholder(name: String, content: String)

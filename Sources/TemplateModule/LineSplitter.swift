@@ -1,11 +1,11 @@
 extension String {
-    func splitLines() -> [String] {
+    public func splitLines() -> [String] {
         return LineSplitter(string: self).split()
     }
 }
 
-final class LineSplitter {
-    init(string: String) {
+public final class LineSplitter {
+    public init(string: String) {
         self.string = string
         self.index = string.startIndex
     }
@@ -13,7 +13,7 @@ final class LineSplitter {
     let string: String
     var index: String.Index
 
-    func split() -> [String] {
+    public func split() -> [String] {
         var lines: [String] = []
 
         while let line = readLine() {
@@ -23,7 +23,7 @@ final class LineSplitter {
         return lines
     }
 
-    func readLine() -> String? {
+    public func readLine() -> String? {
         guard index < string.endIndex else { return nil }
 
         var line = ""
