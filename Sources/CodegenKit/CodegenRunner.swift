@@ -4,18 +4,15 @@ import SwiftFormatConfiguration
 
 public final class CodegenRunner {
     public init(
-        directories: [URL],
         renderers: [any Renderer],
         formatConfiguration: SwiftFormatConfiguration.Configuration? = nil
     ) {
-        self.directories = directories
         self.renderers = renderers
         self.formatConfiguration = formatConfiguration ?? Self.defaultFormatCondiguration()
         self.writer = SwiftWriter()
         self.fileManager = .default
     }
 
-    public var directories: [URL]
     public var renderers: [any Renderer]
     public var formatConfiguration: SwiftFormatConfiguration.Configuration
     public var writer: SwiftWriter
@@ -28,7 +25,7 @@ public final class CodegenRunner {
         return c
     }
 
-    public func run() throws {
+    public func run(directories: [URL]) throws {
         for directory in directories {
             try walk(directory: directory)
         }
