@@ -9,13 +9,11 @@ public final class CodegenRunner {
     ) {
         self.renderers = renderers
         self.formatConfiguration = formatConfiguration ?? Self.defaultFormatCondiguration()
-        self.writer = SwiftWriter()
         self.fileManager = .default
     }
 
     public var renderers: [any Renderer]
     public var formatConfiguration: SwiftFormatConfiguration.Configuration
-    public var writer: SwiftWriter
     private let fileManager: FileManager
 
     public static func defaultFormatCondiguration() -> SwiftFormatConfiguration.Configuration {
