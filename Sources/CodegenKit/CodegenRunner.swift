@@ -46,7 +46,7 @@ public final class CodegenRunner {
         var template = try CodeTemplate(file: file)
 
         for renderer in renderers {
-            try renderer.render(template: &template, on: self)
+            try renderer.render(template: &template, file: file, on: self)
         }
 
         var source = template.description
