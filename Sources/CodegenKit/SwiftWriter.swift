@@ -7,6 +7,7 @@ public struct SwiftWriter {
         "case",
         "catch",
         "class",
+        "else",
         "default",
         "if",
         "import",
@@ -19,14 +20,6 @@ public struct SwiftWriter {
     ]
 
     public func ident(_ string: String) -> String {
-        if keywords.contains(string) {
-            return escapeIdent(string)
-        } else {
-            return string
-        }
-    }
-
-    public func paramLabel(_ string: String) -> String {
         if keywords.contains(string) {
             return escapeIdent(string)
         } else {
