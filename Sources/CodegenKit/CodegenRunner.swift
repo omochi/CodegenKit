@@ -11,12 +11,14 @@ public final class CodegenRunner {
         self.directories = directories
         self.renderers = renderers
         self.formatConfiguration = formatConfiguration ?? Self.defaultFormatCondiguration()
+        self.writer = SwiftWriter()
         self.fileManager = .default
     }
 
     public var directories: [URL]
     public var renderers: [any Renderer]
     public var formatConfiguration: SwiftFormatConfiguration.Configuration
+    public var writer: SwiftWriter
     private let fileManager: FileManager
 
     public static func defaultFormatCondiguration() -> SwiftFormatConfiguration.Configuration {
@@ -46,7 +48,7 @@ public final class CodegenRunner {
         let renderers = self.renderers.filter { $0.isTarget(file: file) }
         if renderers.isEmpty { return }
 
-        var template = try Template(file: file)
+        var template = try CodeTemplate(file: file)
 
         for renderer in renderers {
             try renderer.render(template: &template, on: self)

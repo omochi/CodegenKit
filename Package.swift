@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "CodegenKit",
+    platforms: [.macOS(.v12)],
     products: [
         .library(name: "CodegenKit", targets: ["CodegenKit"]),
         .library(name: "TemplateModule", targets: ["TemplateModule"]),
@@ -20,6 +21,7 @@ let package = Package(
         .target(
             name: "CodegenKit",
             dependencies: [
+                .product(name: "SwiftFormat", package: "swift-format"),
                 .target(name: "TemplateModule")
             ]
         ),
