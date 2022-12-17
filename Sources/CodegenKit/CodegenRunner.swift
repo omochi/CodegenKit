@@ -65,5 +65,6 @@ public final class CodegenRunner {
         let original = try Data(contentsOf: file)
         if data == original { return }
         try data.write(to: file, options: .atomic)
+        print("updated: \(file.relativePath)")
     }
 }
