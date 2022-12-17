@@ -31,7 +31,7 @@ public final class CodegenRunner {
 
     private func walk(directory: URL) throws {
         for file in fileManager.enumerateRelative(path: directory, options: [.skipsHiddenFiles]) {
-            guard fileManager.directoryExists(atPath: file.path) else { continue }
+            if fileManager.directoryExists(atPath: file.path) { continue }
 
             if file.lastPathComponent.hasSuffix(".swift") {
                 try render(file: file)
