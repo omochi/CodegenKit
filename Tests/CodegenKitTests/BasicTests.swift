@@ -1,5 +1,6 @@
 import XCTest
-@testable import CodeTemplate
+@testable import CodeTemplateModule
+@testable import CodegenKit
 
 final class BasicTests: XCTestCase {
     func testSplitLines() {
@@ -12,7 +13,7 @@ final class BasicTests: XCTestCase {
     }
 
     func testTemplate() {
-        var t = Template(string: """
+        var t = CodeTemplate(string: """
             class V {
                 // @codegen(aaa)
                 func foo0() {}

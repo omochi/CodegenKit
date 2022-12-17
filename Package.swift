@@ -7,7 +7,7 @@ let package = Package(
     platforms: [.macOS(.v12)],
     products: [
         .library(name: "CodegenKit", targets: ["CodegenKit"]),
-        .library(name: "TemplateModule", targets: ["TemplateModule"]),
+        .library(name: "CodeTemplateModule", targets: ["CodeTemplateModule"]),
     ],
     dependencies: [
         .package(url: "https://github.com/omochi/CodeTemplate", from: "1.0.2"),
@@ -15,14 +15,14 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "TemplateModule",
+            name: "CodeTemplateModule",
             dependencies: []
         ),
         .target(
             name: "CodegenKit",
             dependencies: [
                 .product(name: "SwiftFormat", package: "swift-format"),
-                .target(name: "TemplateModule")
+                .target(name: "CodeTemplateModule")
             ]
         ),
         .testTarget(

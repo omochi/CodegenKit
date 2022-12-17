@@ -1,1 +1,1 @@
-@_exported import TemplateModule
+@_exported import CodeTemplateModule
