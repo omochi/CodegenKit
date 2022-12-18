@@ -10,7 +10,6 @@ let package = Package(
         .library(name: "CodeTemplateModule", targets: ["CodeTemplateModule"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/omochi/CodeTemplate", from: "1.0.2"),
         .package(url: "https://github.com/apple/swift-format", exact: "0.50700.1")
     ],
     targets: [
