@@ -10,9 +10,8 @@ let package = Package(
         .library(name: "CodeTemplateModule", targets: ["CodeTemplateModule"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/omochi/CodeTemplate", from: "1.0.2"),
         .package(url: "https://github.com/apple/swift-format", exact: "0.50700.1"),
-        .package(url: "https://github.com/apple/swift-syntax", exact: "0.50700.1"),
+        .package(url: "https://github.com/apple/swift-syntax", exact: "0.50700.1")
     ],
     targets: [
         .target(
@@ -34,7 +33,8 @@ let package = Package(
             name: "CodegenKitCLI",
             dependencies: [
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
-                .product(name: "SwiftFormat", package: "swift-format")
+                .product(name: "SwiftFormat", package: "swift-format"),
+                .target(name: "CodegenKit")
             ]
         ),
         .testTarget(

@@ -1,15 +1,6 @@
 {
   "pins" : [
     {
-      "identity" : "codetemplate",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/omochi/CodeTemplate",
-      "state" : {
-        "revision" : "45cadb9129eb712b9fbf808fcb2d3e8575a07b13",
-        "version" : "1.0.2"
-      }
-    },
-    {
       "identity" : "swift-argument-parser",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser.git",
