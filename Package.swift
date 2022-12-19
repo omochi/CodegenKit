@@ -33,6 +33,7 @@ let package = Package(
             name: "CodegenKitCLI",
             dependencies: [
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
                 .product(name: "SwiftFormat", package: "swift-format"),
                 .target(name: "CodegenKit")
             ]
