@@ -4,6 +4,7 @@ import CodegenKitCLI
 final class RepositoryInitializerTests: XCTestCase {
     func testEmpty() throws {
         let w = WorkspaceBuilder()
+        print(w.base.path)
         try w.addFile(
             path: "SwiftTypeReader/Package.swift",
             string: ExampleManifesto().description
