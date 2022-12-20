@@ -6,7 +6,7 @@ import SwiftFormat
 import SwiftFormatConfiguration
 import CodegenKit
 
-public struct ManifestoInitializer {
+public struct RepositoryInitializer {
     public init(directory: URL) {
         self.directory = directory
         self.fileManager = .default
@@ -35,8 +35,8 @@ public struct ManifestoInitializer {
         source = try addExecutableIfNone(source: source, file: file)
         if source != originalSource {
             source = try self.format(source: source, file: file)
+            try source.write(to: file, atomically: true, encoding: .utf8)
         }
-        print(source)
     }
 
     private func parse(source: String, file: URL) throws -> SourceFileSyntax {
