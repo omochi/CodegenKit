@@ -7,15 +7,29 @@ import SwiftFormatConfiguration
 import CodegenKit
 
 public struct RepositoryInitializer {
-    public init(directory: URL) {
+    public init(
+        directory: URL,
+        formatConfiguration: SwiftFormatConfiguration.Configuration = Self.defaultFormatConfiguration
+    ) {
         self.directory = directory
+        self.formatConfiguration = formatConfiguration
         self.fileManager = .default
-        self.buildFormat = Format(indentWidth: 4)
     }
 
     public var directory: URL
+    public var formatConfiguration: SwiftFormatConfiguration.Configuration
+
+    public static var defaultFormatConfiguration: SwiftFormatConfiguration.Configuration {
+        var c = Configuration()
+        c.lineLength = 10000
+        c.indentation = .spaces(4)
+        return c
+    }
+
     private var fileManager: FileManager
-    private var buildFormat: SwiftSyntaxBuilder.Format
+
+    private var codegenKitURL = "https://github.com/omochi/CodegenKit"
+    private var codegenKitVersion = "1.2.0"
     private var executableName = "codegen"
     private var pluginName = "CodegenPlugin"
 
@@ -26,10 +40,12 @@ public struct RepositoryInitializer {
 
         var manifesto = try ManifestoCode(
             fileManager: fileManager,
+            formatConfiguration: formatConfiguration,
             file: directory.appendingPathComponent("Package.swift")
         )
         let originalManifesto = manifesto
 
+        try addCodegenKit(manifesto: &manifesto)
         try addExecutable(manifesto: &manifesto)
         try addPlugin(manifesto: &manifesto)
 
@@ -39,12 +55,22 @@ public struct RepositoryInitializer {
         }
     }
 
+    private func addCodegenKit(manifesto: inout ManifestoCode) throws {
+        if let _ = try manifesto.dependency(url: codegenKitURL) {
+            return
+        }
+
+        print("add CodegenKit dependency")
+
+        try manifesto.addDependency(url: codegenKitURL, version: codegenKitVersion)
+    }
+
     private func addExecutable(manifesto: inout ManifestoCode) throws {
         if let _ = try manifesto.target(name: executableName) {
             return
         }
 
-        print(#"add "\#(executableName)" executable"#)
+        print("add \(executableName) executable")
 
         try manifesto.addExecutable(executableName: executableName)
         try createExecutableDirectory()
@@ -76,7 +102,7 @@ try runner.run(directories: [dir])
             return
         }
 
-        print(#"add "\#(pluginName)" plugin"#)
+        print("add \(pluginName) plugin")
 
         try manifesto.addPlugin(executableName: executableName, pluginName: pluginName)
         try createPluginDirectory()

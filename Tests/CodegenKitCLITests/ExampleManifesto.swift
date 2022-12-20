@@ -1,8 +1,20 @@
-struct ExampleManifesto: CustomStringConvertible {
+import Foundation
+import SwiftSyntax
+import SwiftSyntaxParser
+import SwiftFormat
+import SwiftFormatConfiguration
+import CodegenKitCLI
+
+struct ExampleManifesto {
+    var formatConfiguration: SwiftFormatConfiguration.Configuration = RepositoryInitializer.defaultFormatConfiguration
+    
+    var hasOtherDependencies: Bool = false
+    var hasCodegenKit: Bool = false
+    var hasOtherTargets: Bool = false
     var hasExecutable: Bool = false
     var hasPlugin: Bool = false
 
-    var description: String {
+    func render() throws -> String {
         var lines: [String] = []
 
         lines.append("""
@@ -12,17 +24,26 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftTypeReader",
-    platforms: [.macOS(.v12)],
-    products: [
-        .library(
-            name: "SwiftTypeReader",
-            targets: ["SwiftTypeReader"]
-        )
-    ],
+    products: [],
     dependencies: [
+"""
+        )
+
+        if hasOtherDependencies {
+            lines.append("""
         .package(url: "https://github.com/apple/swift-syntax", exact: "0.50700.1"),
         .package(url: "https://github.com/apple/swift-collections", from: "1.0.4"),
-        .package(url: "https://github.com/omochi/CodegenKit", from: "1.1.3"),
+"""
+            )
+        }
+
+        if hasCodegenKit {
+            lines.append("""
+        .package(url: "https://github.com/omochi/CodegenKit", from: "1.2.0"),
+""")
+        }
+
+        lines.append("""
     ],
     targets: [
 """
@@ -61,7 +82,8 @@ let package = Package(
             )
         }
 
-        lines.append("""
+        if hasOtherTargets {
+            lines.append("""
         .target(
             name: "SwiftTypeReader",
             dependencies: [
@@ -73,12 +95,26 @@ let package = Package(
             name: "SwiftTypeReaderTests",
             dependencies: ["SwiftTypeReader"]
         ),
+"""
+            )
+        }
+
+        lines.append("""
     ]
 )
 
 """
         )
 
-        return lines.joined(separator: "\n")
+        return try format(source: lines.joined(separator: "\n"))
+    }
+
+    private func format(source: String) throws -> String {
+        let file = URL(fileURLWithPath: "Package.swift")
+        let syntax = try SyntaxParser.parse(source: source, filenameForDiagnostics: file.lastPathComponent)
+        let formatter = SwiftFormatter(configuration: formatConfiguration)
+        var out = ""
+        try formatter.format(syntax: syntax, assumingFileURL: file, to: &out)
+        return out
     }
 }

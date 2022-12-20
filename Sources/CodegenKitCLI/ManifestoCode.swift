@@ -1,7 +1,6 @@
 import Foundation
 import SwiftSyntax
 import SwiftSyntaxParser
-import SwiftSyntaxBuilder
 import SwiftFormat
 import SwiftFormatConfiguration
 import CodegenKit
@@ -9,26 +8,26 @@ import CodegenKit
 struct ManifestoCode {
     init(
         fileManager: FileManager,
+        formatConfiguration: SwiftFormatConfiguration.Configuration,
         file: URL
     ) throws {
         guard fileManager.fileExists(atPath: file.path) else {
             throw MessageError("no manifesto file: \(file.relativePath)")
         }
         self.fileManager = fileManager
+        self.formatConfiguration = formatConfiguration
         self.file = file
         self.source = try String(contentsOf: file)
     }
 
     var fileManager: FileManager
+    var formatConfiguration: SwiftFormatConfiguration.Configuration
     var file: URL
     var source: String
 
     mutating func format() throws {
         let syntax = try parse()
-        var c = Configuration()
-        c.lineLength = 10000
-        c.indentation = .spaces(4)
-        let formatter = SwiftFormatter(configuration: c)
+        let formatter = SwiftFormatter(configuration: formatConfiguration)
         var out = ""
         try formatter.format(syntax: syntax, assumingFileURL: file, to: &out)
         self.source = out
@@ -38,8 +37,35 @@ struct ManifestoCode {
         try source.write(to: file, atomically: true, encoding: .utf8)
     }
 
+    func dependenciesArray() throws -> ArrayExprSyntax {
+        let packageCall = try self.packageCall()
+        return try self.dependenciesArray(packageCall: packageCall)
+    }
+
+    func dependency(url: String) throws -> ArrayElementSyntax? {
+        return try dependenciesArray().elements.first {
+            dependencyURL($0) == url
+        }
+    }
+
+    func targetsArray() throws -> ArrayExprSyntax {
+        let packageCall = try self.packageCall()
+        return try self.targetsArray(packageCall: packageCall)
+    }
+
+    func target(name: String) throws -> ArrayElementSyntax? {
+        return try targetsArray().elements.first {
+            targetName($0) == name
+        }
+    }
+
     private func parse() throws -> SourceFileSyntax {
         return try SyntaxParser.parse(source: source, filenameForDiagnostics: file.lastPathComponent)
+    }
+
+    private func packageCall() throws -> FunctionCallExprSyntax {
+        let syntax = try self.parse()
+        return try self.packageCall(source: syntax)
     }
 
     private func packageCall(source: SourceFileSyntax) throws -> FunctionCallExprSyntax {
@@ -70,6 +96,17 @@ struct ManifestoCode {
         return try v.result.unwrap("Package call")
     }
 
+    private func dependenciesArray(packageCall: FunctionCallExprSyntax) throws -> ArrayExprSyntax {
+        for arg in packageCall.argumentList {
+            if arg.label?.text == "dependencies",
+               let array = arg.expression.as(ArrayExprSyntax.self)
+            {
+                return array
+            }
+        }
+        throw NoneError(name: "dependencies array")
+    }
+
     private func targetsArray(packageCall: FunctionCallExprSyntax) throws -> ArrayExprSyntax {
         for arg in packageCall.argumentList {
             if arg.label?.text == "targets",
@@ -81,20 +118,7 @@ struct ManifestoCode {
         throw NoneError(name: "targets array")
     }
 
-
-    func targetsArray() throws -> ArrayExprSyntax {
-        let syntax = try self.parse()
-        let packageCall = try self.packageCall(source: syntax)
-        return try self.targetsArray(packageCall: packageCall)
-    }
-
-    func target(name: String) throws -> ArrayElementSyntax? {
-        return try targetsArray().elements.first {
-            targetName($0) == name
-        }
-    }
-
-    func targetName(_ target: ArrayElementSyntax) -> String? {
+    private func targetName(_ target: ArrayElementSyntax) -> String? {
         guard let call = target.expression.as(FunctionCallExprSyntax.self),
               let member = call.calledExpression.as(MemberAccessExprSyntax.self),
               member.base == nil else { return nil }
@@ -110,6 +134,44 @@ struct ManifestoCode {
             }
         }
         return nil
+    }
+
+    private func dependencyURL(_ dependency: ArrayElementSyntax) -> String? {
+        guard let call = dependency.expression.as(FunctionCallExprSyntax.self),
+              let member = call.calledExpression.as(MemberAccessExprSyntax.self),
+              member.base == nil else { return nil }
+        for arg in call.argumentList {
+            if arg.label?.text == "url" {
+                guard let string = arg.expression.as(StringLiteralExprSyntax.self),
+                      string.segments.count == 1,
+                      let text = string.segments.first?.as(StringSegmentSyntax.self) else {
+                    return nil
+                }
+
+                return text.content.text
+            }
+        }
+        return nil
+    }
+
+    mutating func addDependency(
+        url: String, version: String
+    ) throws {
+        let dependencies = try self.dependenciesArray()
+
+        var position = try dependencies.rightSquare.positionAfterSkippingLeadingTrivia.samePosition(in: source)
+
+        if let last = dependencies.elements.last {
+            position = try last.endPosition.samePosition(in: source)
+        }
+
+        var patch = """
+        .package(url: "\(url)", from: "\(version)"),
+        """
+
+        patch = "\n" + patch
+
+        self.source.insert(contentsOf: patch, at: position)
     }
 
     mutating func addExecutable(
@@ -144,7 +206,7 @@ struct ManifestoCode {
 
         let position = try executableTarget.endPosition.samePosition(in: source)
 
-        let patch = """
+        var patch = """
         .plugin(
             name: "\(pluginName)",
             capability: .command(
@@ -161,7 +223,14 @@ struct ManifestoCode {
             ]
         ),
         """
-        self.source.insert(contentsOf: "\n" + patch, at: position)
+
+        patch = "\n" + patch
+
+        if executableTarget.trailingComma == nil {
+            patch = "," + patch
+        }
+
+        self.source.insert(contentsOf: patch, at: position)
     }
 
 }
