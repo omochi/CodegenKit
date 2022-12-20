@@ -2,18 +2,20 @@ import Foundation
 import SwiftSyntax
 import SwiftSyntaxParser
 import SwiftSyntaxBuilder
+import SwiftFormat
+import SwiftFormatConfiguration
 import CodegenKit
 
 public struct ManifestoInitializer {
     public init(directory: URL) {
         self.directory = directory
         self.fileManager = .default
-        self.format = Format(indentWidth: 4)
+        self.buildFormat = Format(indentWidth: 4)
     }
 
     public var directory: URL
     private var fileManager: FileManager
-    private var format: SwiftSyntaxBuilder.Format
+    private var buildFormat: SwiftSyntaxBuilder.Format
     private var executableName = "codegen"
     private var pluginName = "CodegenPlugin"
 
@@ -22,17 +24,34 @@ public struct ManifestoInitializer {
             throw MessageError("no directory: \(directory.relativePath)")
         }
 
-        let manifestoFile = directory.appendingPathComponent("Package.swift")
-        guard fileManager.fileExists(atPath: manifestoFile.path) else {
-            throw MessageError("no manifesto file: \(manifestoFile.relativePath)")
+        let file = directory.appendingPathComponent("Package.swift")
+        guard fileManager.fileExists(atPath: file.path) else {
+            throw MessageError("no manifesto file: \(file.relativePath)")
         }
+        print(file)
 
-        var manifesto = try SyntaxParser.parse(manifestoFile)
-        manifesto = try modifyPackageCall(manifesto: manifesto) { (packageCall) in
+        let oldManifesto = try SyntaxParser.parse(file)
+        let newManifesto = try modifyPackageCall(manifesto: oldManifesto) { (packageCall) in
             return try modifyTargetsArray(packageCall: packageCall) { (targets) in
                 return processTargetArray(targets: targets)
             }
         }
+        if oldManifesto != newManifesto {
+            let source = newManifesto.description
+//            let source = try self.format(syntax: newManifesto, file: file)
+            try source.write(to: file, atomically: true, encoding: .utf8)
+        }
+
+    }
+
+    private func format(syntax: SourceFileSyntax, file: URL) throws -> String {
+        var c = Configuration()
+        c.lineLength = 10000
+        c.indentation = .spaces(4)
+        let formatter = SwiftFormatter(configuration: c)
+        var out = ""
+        try formatter.format(syntax: syntax, assumingFileURL: file, to: &out)
+        return out
     }
 
     private func modifyPackageCall(
@@ -104,7 +123,6 @@ public struct ManifestoInitializer {
     private func processTargetArray(targets: ArrayExprSyntax) -> ArrayExprSyntax {
         var elements = targets.elements
         elements = addExecutableTargetIfNone(elements: elements)
-        print(elements.description)
         return targets.withElements(elements)
     }
 
@@ -113,33 +131,51 @@ public struct ManifestoInitializer {
             return elements
         }
 
+        print("add codegen executable")
+
         var elements = elements
 
         let targetExpr = FunctionCallExpr(
             calledExpression: MemberAccessExpr(
-                dot: .prefixPeriod, name: TokenSyntax.identifier("executableTarget")
+                dot: .prefixPeriod.withLeadingTrivia(.newlines(1)),
+                name: TokenSyntax.identifier("executableTarget")
             ),
             leftParen: .leftParen.withTrailingTrivia(.newlines(1)),
             argumentList: TupleExprElementList([
                 TupleExprElement(
                     label: .identifier("name"),
                     colon: .colon,
-                    expression: StringLiteralExpr(
-                        openQuote: .stringQuote,
-                        segments: StringLiteralSegments([
-                            StringSegment(content: executableName)
-                        ]),
-                        closeQuote: .stringQuote
-                    ),
+                    expression: stringLiteral(executableName),
                     trailingComma: .comma.withTrailingTrivia(.newlines(1))
                 ),
                 TupleExprElement(
                     label: .identifier("dependencies"),
                     colon: .colon,
                     expression: ArrayExpr(
+                        leftSquare: .leftSquareBracket.withTrailingTrivia(.newlines(1)),
                         elements: ArrayElementList([
-                            ArrayElement(expression: IdentifierExpr("aaa"))
-
+                            ArrayElement(
+                                expression: FunctionCallExpr(
+                                    calledExpression: MemberAccessExpr(
+                                        dot: .prefixPeriod, name: .identifier("product")
+                                    ),
+                                    leftParen: .leftParen,
+                                    argumentList: TupleExprElementList([
+                                        TupleExprElement(
+                                            label: .identifier("name"),
+                                            colon: .colon,
+                                            expression: stringLiteral("CodegenKit"),
+                                            trailingComma: .comma
+                                        ),
+                                        TupleExprElement(
+                                            label: .identifier("package"),
+                                            colon: .colon,
+                                            expression: stringLiteral("CodegenKit")
+                                        )
+                                    ]),
+                                    rightParen: .rightParen.withTrailingTrivia(.newlines(1))
+                                )
+                            )
                         ]),
                         rightSquare: .rightSquareBracket.withTrailingTrivia(.newlines(1))
                     )
@@ -150,12 +186,30 @@ public struct ManifestoInitializer {
 
         let newElement = ArrayElementSyntax(
             ArrayElement(expression: targetExpr, trailingComma: .comma)
-                .buildSyntax(format: format)
+                .buildSyntax(format: buildFormat)
         )!
 
         elements = elements.inserting(newElement, at: 0)
 
         return elements
+    }
+
+    private func stringLiteral(_ text: String, newline: Bool = false) -> StringLiteralExpr {
+        func closeQuote() -> TokenSyntax {
+            var token = TokenSyntax.stringQuote
+            if newline {
+                token = token.withTrailingTrivia(.newlines(1))
+            }
+            return token
+        }
+
+        return StringLiteralExpr(
+            openQuote: .stringQuote,
+            segments: StringLiteralSegments([
+                StringSegment(content: text)
+            ]),
+            closeQuote: closeQuote()
+        )
     }
 
     private func targetName(_ target: ArrayElementSyntax) -> String? {
