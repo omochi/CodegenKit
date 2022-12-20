@@ -1,5 +1,5 @@
 struct ExampleManifesto: CustomStringConvertible {
-    var hasCodegen: Bool = false
+    var hasExecutable: Bool = false
     var hasPlugin: Bool = false
 
     var description: String {
@@ -28,7 +28,7 @@ let package = Package(
 """
         )
 
-        if hasCodegen {
+        if hasExecutable {
             lines.append("""
         .executableTarget(
             name: "codegen",
@@ -45,8 +45,13 @@ let package = Package(
         .plugin(
             name: "CodegenPlugin",
             capability: .command(
-                intent: .custom(verb: "codegen", description: "codegen"),
-                permissions: [.writeToPackageDirectory(reason: "codegen")]
+                intent: .custom(
+                    verb: "codegen",
+                    description: "Generate code"
+                ),
+                permissions: [
+                    .writeToPackageDirectory(reason: "Write generated code")
+                ]
             ),
             dependencies: [
                 .target(name: "codegen")
