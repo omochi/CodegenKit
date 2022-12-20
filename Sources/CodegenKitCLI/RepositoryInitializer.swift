@@ -30,10 +30,8 @@ public struct RepositoryInitializer {
         )
         let originalManifesto = manifesto
 
-        try manifesto.addExecutableIfNone(executableName: executableName)
-        try createExecutableDirectory()
-        try manifesto.addPluginIfNone(executableName: executableName, pluginName: pluginName)
-        try createPluginDirectory()
+        try addExecutable(manifesto: &manifesto)
+        try addPlugin(manifesto: &manifesto)
 
         if manifesto.source != originalManifesto.source {
             try manifesto.format()
@@ -41,13 +39,22 @@ public struct RepositoryInitializer {
         }
     }
 
+    private func addExecutable(manifesto: inout ManifestoCode) throws {
+        if let _ = try manifesto.target(name: executableName) {
+            return
+        }
+
+        print(#"add "\#(executableName)" executable"#)
+
+        try manifesto.addExecutable(executableName: executableName)
+        try createExecutableDirectory()
+    }
+
     private func createExecutableDirectory() throws {
         let dir = self.directory.appendingPathComponent("Sources/\(executableName)")
         if fileManager.directoryExists(atPath: dir.path) {
             return
         }
-
-        print("create \(executableName) directory")
 
         try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
         let source = """
@@ -64,13 +71,22 @@ try runner.run(directories: [dir])
         try source.write(to: file, atomically: true, encoding: .utf8)
     }
 
+    private func addPlugin(manifesto: inout ManifestoCode) throws {
+        if let _ = try manifesto.target(name: pluginName) {
+            return
+        }
+
+        print(#"add "\#(pluginName)" plugin"#)
+
+        try manifesto.addPlugin(executableName: executableName, pluginName: pluginName)
+        try createPluginDirectory()
+    }
+
     private func createPluginDirectory() throws {
         let dir = self.directory.appendingPathComponent("Plugins/\(pluginName)")
         if fileManager.directoryExists(atPath: dir.path) {
             return
         }
-
-        print("create \(pluginName) directory")
 
         let builder = PluginDirectoryBuilder(
             fileManager: fileManager,

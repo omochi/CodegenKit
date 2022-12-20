@@ -82,13 +82,19 @@ struct ManifestoCode {
     }
 
 
-    private func targetsArray() throws -> ArrayExprSyntax {
+    func targetsArray() throws -> ArrayExprSyntax {
         let syntax = try self.parse()
         let packageCall = try self.packageCall(source: syntax)
         return try self.targetsArray(packageCall: packageCall)
     }
 
-    private func targetName(_ target: ArrayElementSyntax) -> String? {
+    func target(name: String) throws -> ArrayElementSyntax? {
+        return try targetsArray().elements.first {
+            targetName($0) == name
+        }
+    }
+
+    func targetName(_ target: ArrayElementSyntax) -> String? {
         guard let call = target.expression.as(FunctionCallExprSyntax.self),
               let member = call.calledExpression.as(MemberAccessExprSyntax.self),
               member.base == nil else { return nil }
@@ -106,15 +112,10 @@ struct ManifestoCode {
         return nil
     }
 
-    mutating func addExecutableIfNone(
+    mutating func addExecutable(
         executableName: String
     ) throws {
         let targets = try self.targetsArray()
-        if targets.elements.contains(where: { targetName($0) == executableName }) {
-            return
-        }
-
-        print("add \(executableName) executable")
 
         let position = try targets.leftSquare.endPosition.samePosition(in: source)
 
@@ -129,16 +130,11 @@ struct ManifestoCode {
         self.source.insert(contentsOf: "\n" + patch, at: position)
     }
 
-    mutating func addPluginIfNone(
+    mutating func addPlugin(
         executableName: String,
         pluginName: String
     ) throws {
         let targets = try self.targetsArray()
-        if targets.elements.contains(where: { targetName($0) == pluginName }) {
-            return
-        }
-
-        print("add \(pluginName) plugin")
 
         guard let executableTarget = targets.elements.first(where: {
             targetName($0) == executableName
