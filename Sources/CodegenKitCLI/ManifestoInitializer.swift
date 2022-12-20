@@ -28,23 +28,23 @@ public struct ManifestoInitializer {
         guard fileManager.fileExists(atPath: file.path) else {
             throw MessageError("no manifesto file: \(file.relativePath)")
         }
-        print(file)
+        print(file.path)
 
-        let oldManifesto = try SyntaxParser.parse(file)
-        let newManifesto = try modifyPackageCall(manifesto: oldManifesto) { (packageCall) in
-            return try modifyTargetsArray(packageCall: packageCall) { (targets) in
-                return processTargetArray(targets: targets)
-            }
+        let originalSource = try String(contentsOf: file)
+        var source = originalSource
+        source = try addExecutableIfNone(source: source, file: file)
+        if source != originalSource {
+            source = try self.format(source: source, file: file)
         }
-        if oldManifesto != newManifesto {
-            let source = newManifesto.description
-//            let source = try self.format(syntax: newManifesto, file: file)
-            try source.write(to: file, atomically: true, encoding: .utf8)
-        }
-
+        print(source)
     }
 
-    private func format(syntax: SourceFileSyntax, file: URL) throws -> String {
+    private func parse(source: String, file: URL) throws -> SourceFileSyntax {
+        return try SyntaxParser.parse(source: source, filenameForDiagnostics: file.lastPathComponent)
+    }
+
+    private func format(source: String, file: URL) throws -> String {
+        let syntax = try parse(source: source, file: file)
         var c = Configuration()
         c.lineLength = 10000
         c.indentation = .spaces(4)
@@ -54,162 +54,43 @@ public struct ManifestoInitializer {
         return out
     }
 
-    private func modifyPackageCall(
-        manifesto: SourceFileSyntax,
-        modify: @escaping (FunctionCallExprSyntax) throws -> FunctionCallExprSyntax
-    ) throws -> SourceFileSyntax {
-        final class Visitor: SyntaxRewriter {
-            init(modify: @escaping (FunctionCallExprSyntax) throws -> FunctionCallExprSyntax) {
-                self.modify = modify
+    private func packageCall(source: SourceFileSyntax) throws -> FunctionCallExprSyntax {
+        final class Visitor: SyntaxAnyVisitor {
+            var result: FunctionCallExprSyntax? = nil
+
+            override func visitAny(_ node: Syntax) -> SyntaxVisitorContinueKind {
+                guard result == nil else { return .skipChildren }
+                return .visitChildren
             }
 
-            var modify: (FunctionCallExprSyntax) throws -> FunctionCallExprSyntax
-            var target: FunctionCallExprSyntax? = nil
-            var error: Error? = nil
-
-            override func visit(_ node: FunctionCallExprSyntax) -> ExprSyntax {
-                guard target == nil else { return ExprSyntax(node) }
+            override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
+                guard result == nil else { return .skipChildren }
 
                 if let ident = node.calledExpression.as(IdentifierExprSyntax.self),
                    ident.identifier.text == "Package"
                 {
-                    self.target = node
-                    do {
-                        let node = try self.modify(node)
-                        return ExprSyntax(node)
-                    } catch {
-                        self.error = error
-                    }
+                    self.result = node
+                    return .skipChildren
                 }
 
-                return ExprSyntax(node)
+                return .visitChildren
             }
         }
 
-        let v = Visitor(modify: modify)
-        let result = v.visit(manifesto)
-        if v.target == nil {
-            throw MessageError("no Package call found")
-        }
-        return SourceFileSyntax(result)!
+        let v = Visitor()
+        v.walk(source)
+        return try v.result.unwrap("Package call")
     }
 
-    private func modifyTargetsArray(
-        packageCall: FunctionCallExprSyntax,
-        modify: (ArrayExprSyntax) -> ArrayExprSyntax
-    ) throws -> FunctionCallExprSyntax {
-        var found = false
-        var args = packageCall.argumentList
-        for (index, arg) in args.enumerated() {
-            var arg = arg
-            guard !found else { break }
-
+    private func targetsArray(packageCall: FunctionCallExprSyntax) throws -> ArrayExprSyntax {
+        for arg in packageCall.argumentList {
             if arg.label?.text == "targets",
-               var array = arg.expression.as(ArrayExprSyntax.self)
+               let array = arg.expression.as(ArrayExprSyntax.self)
             {
-                found = true
-                array = modify(array)
-                arg = arg.withExpression(ExprSyntax(array))
-                args = args.replacing(childAt: index, with: arg)
+                return array
             }
         }
-        if !found {
-            throw MessageError("no targets")
-        }
-
-        return packageCall.withArgumentList(args)
-    }
-
-    private func processTargetArray(targets: ArrayExprSyntax) -> ArrayExprSyntax {
-        var elements = targets.elements
-        elements = addExecutableTargetIfNone(elements: elements)
-        return targets.withElements(elements)
-    }
-
-    private func addExecutableTargetIfNone(elements: ArrayElementListSyntax) -> ArrayElementListSyntax {
-        if elements.contains(where: { targetName($0) == executableName }) {
-            return elements
-        }
-
-        print("add codegen executable")
-
-        var elements = elements
-
-        let targetExpr = FunctionCallExpr(
-            calledExpression: MemberAccessExpr(
-                dot: .prefixPeriod.withLeadingTrivia(.newlines(1)),
-                name: TokenSyntax.identifier("executableTarget")
-            ),
-            leftParen: .leftParen.withTrailingTrivia(.newlines(1)),
-            argumentList: TupleExprElementList([
-                TupleExprElement(
-                    label: .identifier("name"),
-                    colon: .colon,
-                    expression: stringLiteral(executableName),
-                    trailingComma: .comma.withTrailingTrivia(.newlines(1))
-                ),
-                TupleExprElement(
-                    label: .identifier("dependencies"),
-                    colon: .colon,
-                    expression: ArrayExpr(
-                        leftSquare: .leftSquareBracket.withTrailingTrivia(.newlines(1)),
-                        elements: ArrayElementList([
-                            ArrayElement(
-                                expression: FunctionCallExpr(
-                                    calledExpression: MemberAccessExpr(
-                                        dot: .prefixPeriod, name: .identifier("product")
-                                    ),
-                                    leftParen: .leftParen,
-                                    argumentList: TupleExprElementList([
-                                        TupleExprElement(
-                                            label: .identifier("name"),
-                                            colon: .colon,
-                                            expression: stringLiteral("CodegenKit"),
-                                            trailingComma: .comma
-                                        ),
-                                        TupleExprElement(
-                                            label: .identifier("package"),
-                                            colon: .colon,
-                                            expression: stringLiteral("CodegenKit")
-                                        )
-                                    ]),
-                                    rightParen: .rightParen.withTrailingTrivia(.newlines(1))
-                                )
-                            )
-                        ]),
-                        rightSquare: .rightSquareBracket.withTrailingTrivia(.newlines(1))
-                    )
-                )
-            ]),
-            rightParen: .rightParen
-        )
-
-        let newElement = ArrayElementSyntax(
-            ArrayElement(expression: targetExpr, trailingComma: .comma)
-                .buildSyntax(format: buildFormat)
-        )!
-
-        elements = elements.inserting(newElement, at: 0)
-
-        return elements
-    }
-
-    private func stringLiteral(_ text: String, newline: Bool = false) -> StringLiteralExpr {
-        func closeQuote() -> TokenSyntax {
-            var token = TokenSyntax.stringQuote
-            if newline {
-                token = token.withTrailingTrivia(.newlines(1))
-            }
-            return token
-        }
-
-        return StringLiteralExpr(
-            openQuote: .stringQuote,
-            segments: StringLiteralSegments([
-                StringSegment(content: text)
-            ]),
-            closeQuote: closeQuote()
-        )
+        throw NoneError(name: "targets array")
     }
 
     private func targetName(_ target: ArrayElementSyntax) -> String? {
@@ -228,5 +109,30 @@ public struct ManifestoInitializer {
             }
         }
         return nil
+    }
+
+    private func addExecutableIfNone(source: String, file: URL) throws -> String {
+        var source = source
+        let syntax = try parse(source: source, file: file)
+        let packageCall = try self.packageCall(source: syntax)
+        let targets = try self.targetsArray(packageCall: packageCall)
+        if targets.elements.contains(where: { targetName($0) == executableName }) {
+            return source
+        }
+
+        print("add \(executableName) executable")
+
+        let position = try targets.leftSquare.endPosition.samePosition(in: source)
+
+        let patch = """
+        .executableTarget(
+            name: "\(executableName)",
+            dependencies: [
+                .product(name: "CodegenKit", package: "CodegenKit")
+            ]
+        ),
+        """
+        source.insert(contentsOf: "\n" + patch, at: position)
+        return source
     }
 }
