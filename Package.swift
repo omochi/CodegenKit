@@ -4,13 +4,16 @@ import PackageDescription
 
 let package = Package(
     name: "CodegenKit",
-    platforms: [.macOS(.v12)],
+    platforms: [.macOS(.v10_15)],
     products: [
         .library(name: "CodegenKit", targets: ["CodegenKit"]),
         .library(name: "CodeTemplateModule", targets: ["CodeTemplateModule"]),
+        .plugin(name: "CodegenKitPlugin", targets: ["CodegenKitPlugin"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-format", exact: "0.50700.1")
+        .package(url: "https://github.com/apple/swift-format", exact: "0.50700.1"),
+        .package(url: "https://github.com/apple/swift-syntax", exact: "0.50700.1"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.1.4")
     ],
     targets: [
         .target(
@@ -28,5 +31,38 @@ let package = Package(
             name: "CodegenKitTests",
             dependencies: ["CodegenKit"]
         ),
+        .target(
+            name: "CodegenKitCLI",
+            dependencies: [
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                .product(name: "SwiftFormat", package: "swift-format"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .target(name: "CodegenKit")
+            ]
+        ),
+        .executableTarget(
+            name: "codegen-kit",
+            dependencies: [
+                .target(name: "CodegenKitCLI")
+            ]
+        ),
+        .plugin(
+            name: "CodegenKitPlugin",
+            capability: .command(
+                intent: .custom(
+                    verb: "codegenkit", description: "Use CodegenKit CLI"
+                )
+            ),
+            dependencies: [
+                .target(name: "codegen-kit")
+            ]
+        ),
+        .testTarget(
+            name: "CodegenKitCLITests",
+            dependencies: [
+                .target(name: "CodegenKitCLI")
+            ]
+        )
     ]
 )
