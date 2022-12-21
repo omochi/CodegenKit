@@ -8,6 +8,7 @@ let package = Package(
     products: [
         .library(name: "CodegenKit", targets: ["CodegenKit"]),
         .library(name: "CodeTemplateModule", targets: ["CodeTemplateModule"]),
+        .plugin(name: "CodegenKitPlugin", targets: ["CodegenKitPlugin"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-format", exact: "0.50700.1"),
@@ -37,6 +38,21 @@ let package = Package(
                 .product(name: "SwiftFormat", package: "swift-format"),
                 .target(name: "CodegenKit")
             ]
+        ),
+        .executableTarget(
+            name: "codegenkit",
+            dependencies: [
+                .target(name: "CodegenKitCLI")
+            ],
+            path: "Sources/codegenkit-exe"
+        ),
+        .plugin(
+            name: "CodegenKitPlugin",
+            capability: .command(
+                intent: .custom(
+                    verb: "codegenkit", description: "Use CodegenKit CLI"
+                )
+            )
         ),
         .testTarget(
             name: "CodegenKitCLITests",
