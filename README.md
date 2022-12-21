@@ -1,16 +1,13 @@
-# CodegenKit
+# CodegenKit: Swift code generation framework
 
-Swift code generation framework.
+This is a framework for introducing code generation on your Swift project.
+You can do meta-programming like below.
 
-## Usage
+## Code becomes template as it is
 
-### Step1. Write code with placeholder
-
-`@codegen(name)` and `@end` are placeholder marker.
-Lines between them are edited by tool.
+Placeholders are defined by markers in Swift code as follows.
 
 ```swift
-// TSDecl.swift
 protocol TSDecl {}
 
 extension TSDecl {
@@ -19,14 +16,16 @@ extension TSDecl {
 }
 ```
 
-### Step2. Write yor renderer.
+Generated codes are inserted in area between markers.
 
-Write your renderer that conforms to `CodegenKit.Renderer`.
-It will get source as `CodeTemplate`.
-You can edit placeholder via subscript.
+Thus, CodegenKit doesn't use any specific template files.
+Instead, Swift source codes are used as a template.
+
+## Write code renderer in Swift
+
+Write code renderer as follows.
 
 ```swift
-// TSDeclRenderer.swift
 import Foundation
 import CodegenKit
 
@@ -57,46 +56,19 @@ public var as\(node.stem.pascal): \(node.typeName)? { self as? \(node.typeName) 
 }
 ```
 
-## Step3. Build your generator executable
+Your source code are passed as `CodeTemplate` object.
+You can edit contents of placeholder via subscript.
 
-Register your renderers to `CodegenKit.CodegenRunner` and invoke `run` method.
-`CodegenRunner` scan applied directories recursively.
+## Do code generation
 
-```swift
-// main.swift
-import Foundation
-import CodegenKit
-
-let runner = CodegenRunner(renderers: [
-    TSDeclRenderer()
-])
-try runner.run(directories: [URL(fileURLWithPath: ".")])
-```
-
-```swift
-let package = Package(
-    ...
-    targets: [
-        ...
-        .executableTarget(
-            name: "codegen",
-            dependencies: [
-                .product(name: "CodegenKit", package: "CodegenKit")
-            ]
-        )
-        ...
-    ],
-    ...
-)
-```
-
-## Step4. Run generator
+After writing renderers, generate codes.
+Perform code generation with following command.
 
 ```
-$ swift run codegen
+$ swift package codegen
 ```
 
-You will get generated code.
+Previous code will be edited as follows.
 
 ```swift
 // TSDecl.swift
@@ -118,57 +90,12 @@ extension TSDecl {
 }
 ```
 
-CodegenKit automatically format generated code by [swift-format](https://github.com/apple/swift-format).
-So you don't have to worry about precise textual control like indenting when write renderer.
+Let's start and enjoy code generation!
+Please read [this document](Docs/init.md) for detailed setup instructions.
 
-## Step5. (optional) Build package plugin
+# Documents
 
-If you write [command plugin](https://github.com/apple/swift-evolution/blob/main/proposals/0332-swiftpm-command-plugins.md),
-you can invoke codegen from package plugin.
+- [Setup instructions](Docs/init.md)
+- [CodeTemplateModule sublibrary](Docs/CodeTemplateModule.md)
 
-```
-$ swift package codegen
-```
-
-See examples to know how do this.
-
-## Examples
-
-- [TypeScriptAST](https://github.com/omochi/TypeScriptAST)
-- [SwiftTypeReader](https://github.com/omochi/SwiftTypeReader)
-
-# CodeTemplate
-
-Small library for support **in place** code generation.
-You can use this module independently from CodegenKit. 
-
-## Usage
-
-Write code as template with markers.
-
-```swift
-// Visitor.swift
-class Visitor {
-    ...
-
-    // @codegen(visitImpl)
-    func visitImpl(call: CallExpr) { ... }
-    func visitImpl(ident: IdentExpr) { ... }
-    // @end
-}
-```
-
-Load code as template, edit, save.
-
-```swift
-let file = URL(fileURLWithPath: "Visitor.swift")
-var template = try Template(file: file)
-template["visitImpl"] = generateVisitImpl()
-try template.description.write(to: file, atomically: true, encoding: .utf8)
-```
-
-## Detail
-
-CodeTemplate just split source file by lines.
-It doesn't see any syntax like comments, so it's target language agnostic.
 
