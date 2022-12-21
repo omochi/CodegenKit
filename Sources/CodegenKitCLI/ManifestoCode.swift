@@ -37,6 +37,18 @@ struct ManifestoCode {
         try source.write(to: file, atomically: true, encoding: .utf8)
     }
 
+    func nameArg() throws -> TupleExprElementSyntax? {
+        return try self.nameArg(packageCall: self.packageCall())
+    }
+
+    func defaultLocalizationArg() throws -> TupleExprElementSyntax? {
+        return try self.defaultLocalizationArg(packageCall: self.packageCall())
+    }
+
+    func platformsArg() throws -> TupleExprElementSyntax? {
+        return try self.packageCall().arg(name: "platforms")
+    }
+
     func dependenciesArray() throws -> ArrayExprSyntax {
         let packageCall = try self.packageCall()
         return try self.dependenciesArray(packageCall: packageCall)
@@ -96,26 +108,28 @@ struct ManifestoCode {
         return try v.result.unwrap("Package call")
     }
 
+    private func nameArg(packageCall: FunctionCallExprSyntax) -> TupleExprElementSyntax? {
+        return packageCall.arg(name: "name")
+    }
+
+    private func defaultLocalizationArg(packageCall: FunctionCallExprSyntax) -> TupleExprElementSyntax? {
+        return packageCall.arg(name: "defaultLocalization")
+    }
+
     private func dependenciesArray(packageCall: FunctionCallExprSyntax) throws -> ArrayExprSyntax {
-        for arg in packageCall.argumentList {
-            if arg.label?.text == "dependencies",
-               let array = arg.expression.as(ArrayExprSyntax.self)
-            {
-                return array
-            }
+        guard let arg = packageCall.arg(name: "dependencies"),
+              let array = arg.expression.as(ArrayExprSyntax.self) else {
+            throw NoneError(name: "dependencies array")
         }
-        throw NoneError(name: "dependencies array")
+        return array
     }
 
     private func targetsArray(packageCall: FunctionCallExprSyntax) throws -> ArrayExprSyntax {
-        for arg in packageCall.argumentList {
-            if arg.label?.text == "targets",
-               let array = arg.expression.as(ArrayExprSyntax.self)
-            {
-                return array
-            }
+        guard let arg = packageCall.arg(name: "targets"),
+              let array = arg.expression.as(ArrayExprSyntax.self) else {
+            throw NoneError(name: "targets array")
         }
-        throw NoneError(name: "targets array")
+        return array
     }
 
     private func targetName(_ target: ArrayElementSyntax) -> String? {
@@ -139,19 +153,37 @@ struct ManifestoCode {
     private func dependencyURL(_ dependency: ArrayElementSyntax) -> String? {
         guard let call = dependency.expression.as(FunctionCallExprSyntax.self),
               let member = call.calledExpression.as(MemberAccessExprSyntax.self),
-              member.base == nil else { return nil }
-        for arg in call.argumentList {
-            if arg.label?.text == "url" {
-                guard let string = arg.expression.as(StringLiteralExprSyntax.self),
-                      string.segments.count == 1,
-                      let text = string.segments.first?.as(StringSegmentSyntax.self) else {
-                    return nil
-                }
+              member.base == nil,
+              let arg = call.arg(name: "url"),
+              let string = arg.expression.as(StringLiteralExprSyntax.self),
+              string.segments.count == 1,
+              let text = string.segments.first?.as(StringSegmentSyntax.self)
+        else { return nil }
 
-                return text.content.text
+        return text.content.text
+    }
+
+    mutating func addPlatform(
+        platform: String
+    ) throws {
+        let packageCall = try self.packageCall()
+
+        let frontArg: TupleExprElementSyntax = try {
+            if let arg = self.defaultLocalizationArg(packageCall: packageCall) {
+                return arg
             }
-        }
-        return nil
+            return try self.nameArg(packageCall: packageCall).unwrap("name")
+        }()
+
+        let position = try frontArg.endPosition.samePosition(in: source)
+
+        var patch = """
+        platforms: [\(platform)],
+        """
+
+        patch = "\n" + patch
+
+        self.source.insert(contentsOf: patch, at: position)
     }
 
     mutating func addDependency(
@@ -159,11 +191,12 @@ struct ManifestoCode {
     ) throws {
         let dependencies = try self.dependenciesArray()
 
-        var position = try dependencies.rightSquare.positionAfterSkippingLeadingTrivia.samePosition(in: source)
-
-        if let last = dependencies.elements.last {
-            position = try last.endPosition.samePosition(in: source)
-        }
+        let position: String.Index = try {
+            if let last = dependencies.elements.last {
+                return try last.endPosition.samePosition(in: source)
+            }
+            return try dependencies.rightSquare.positionAfterSkippingLeadingTrivia.samePosition(in: source)
+        }()
 
         var patch = """
         .package(url: "\(url)", from: "\(version)"),

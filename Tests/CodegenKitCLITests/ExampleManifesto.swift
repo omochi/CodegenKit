@@ -7,7 +7,9 @@ import CodegenKitCLI
 
 struct ExampleManifesto {
     var formatConfiguration: SwiftFormatConfiguration.Configuration = RepositoryInitializer.defaultFormatConfiguration
-    
+
+    var hasDefaultLocalization: Bool = false
+    var hasPlatforms: Bool = false
     var hasOtherDependencies: Bool = false
     var hasCodegenKit: Bool = false
     var hasOtherTargets: Bool = false
@@ -24,6 +26,24 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftTypeReader",
+"""
+        )
+
+        if hasDefaultLocalization {
+            lines.append("""
+    defaultLocalization: "ja",
+"""
+            )
+        }
+
+        if hasPlatforms {
+            lines.append("""
+    platforms: [.macOS(.v10_15)],
+"""
+            )
+        }
+
+        lines.append("""
     products: [],
     dependencies: [
 """

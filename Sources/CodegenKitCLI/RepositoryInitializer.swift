@@ -37,21 +37,32 @@ public struct RepositoryInitializer {
             throw MessageError("no directory: \(directory.relativePath)")
         }
 
-        var manifesto = try ManifestoCode(
+        var m = try ManifestoCode(
             fileManager: fileManager,
             formatConfiguration: formatConfiguration,
             file: directory.appendingPathComponent("Package.swift")
         )
-        let originalManifesto = manifesto
+        let originalManifesto = m
 
-        try addCodegenKit(manifesto: &manifesto)
-        try addExecutable(manifesto: &manifesto)
-        try addPlugin(manifesto: &manifesto)
+        try addPlatform(manifesto: &m)
+        try addCodegenKit(manifesto: &m)
+        try addExecutable(manifesto: &m)
+        try addPlugin(manifesto: &m)
 
-        if manifesto.source != originalManifesto.source {
-            try manifesto.format()
-            try manifesto.write()
+        if m.source != originalManifesto.source {
+            try m.format()
+            try m.write()
         }
+    }
+
+    private func addPlatform(manifesto: inout ManifestoCode) throws {
+        if let _ = try manifesto.platformsArg() {
+            return
+        }
+
+        print("add platform requirements")
+
+        try manifesto.addPlatform(platform: ".macOS(.v10_15)")
     }
 
     private func addCodegenKit(manifesto: inout ManifestoCode) throws {
