@@ -12,7 +12,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-format", exact: "0.50700.1"),
-        .package(url: "https://github.com/apple/swift-syntax", exact: "0.50700.1")
+        .package(url: "https://github.com/apple/swift-syntax", exact: "0.50700.1"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.1.4")
     ],
     targets: [
         .target(
@@ -36,6 +37,7 @@ let package = Package(
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
                 .product(name: "SwiftFormat", package: "swift-format"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .target(name: "CodegenKit")
             ]
         ),
@@ -44,7 +46,7 @@ let package = Package(
             dependencies: [
                 .target(name: "CodegenKitCLI")
             ],
-            path: "Sources/codegenkit-exe"
+            path: "Sources/codegenkit-main"
         ),
         .plugin(
             name: "CodegenKitPlugin",
@@ -52,11 +54,16 @@ let package = Package(
                 intent: .custom(
                     verb: "codegenkit", description: "Use CodegenKit CLI"
                 )
-            )
+            ),
+            dependencies: [
+                .target(name: "codegenkit")
+            ]
         ),
         .testTarget(
             name: "CodegenKitCLITests",
-            dependencies: ["CodegenKitCLI"]
+            dependencies: [
+                .target(name: "CodegenKitCLI")
+            ]
         )
     ]
 )

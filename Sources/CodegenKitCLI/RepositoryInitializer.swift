@@ -29,7 +29,6 @@ public struct RepositoryInitializer {
     private var fileManager: FileManager
 
     private var codegenKitURL = "https://github.com/omochi/CodegenKit"
-    private var codegenKitVersion = "1.2.0"
     private var executableName = "codegen"
     private var pluginName = "CodegenPlugin"
 
@@ -62,7 +61,7 @@ public struct RepositoryInitializer {
 
         print("add CodegenKit dependency")
 
-        try manifesto.addDependency(url: codegenKitURL, version: codegenKitVersion)
+        try manifesto.addDependency(url: codegenKitURL, version: CodegenKit.Module.version)
     }
 
     private func addExecutable(manifesto: inout ManifestoCode) throws {
