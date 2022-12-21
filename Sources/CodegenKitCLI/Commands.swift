@@ -3,7 +3,7 @@ import CodegenKit
 
 public struct CodegenKitCommand: ParsableCommand {
     public static var configuration = CommandConfiguration(
-        commandName: "codegenkit",
+        commandName: "codegen-kit",
         abstract: "CodegenKit CLI tool",
         version: CodegenKit.Module.version,
         subcommands: [

@@ -42,11 +42,10 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "codegenkit",
+            name: "codegen-kit",
             dependencies: [
                 .target(name: "CodegenKitCLI")
-            ],
-            path: "Sources/codegenkit-main"
+            ]
         ),
         .plugin(
             name: "CodegenKitPlugin",
@@ -56,7 +55,7 @@ let package = Package(
                 )
             ),
             dependencies: [
-                .target(name: "codegenkit")
+                .target(name: "codegen-kit")
             ]
         ),
         .testTarget(
