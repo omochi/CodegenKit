@@ -1,8 +1,13 @@
+import Foundation
 import ArgumentParser
 import CodegenKit
 
-public struct CodegenKitCommand: ParsableCommand {
-    public static var configuration = CommandConfiguration(
+public func main() {
+    CodegenKitCommand.main()
+}
+
+struct CodegenKitCommand: ParsableCommand {
+    static var configuration = CommandConfiguration(
         commandName: "codegen-kit",
         abstract: "CodegenKit CLI tool",
         version: CodegenKit.Module.version,
@@ -11,18 +16,19 @@ public struct CodegenKitCommand: ParsableCommand {
         ]
     )
 
-    public init() {}
+    init() {}
 }
 
-public struct InitCommand: ParsableCommand {
-    public static var configuration = CommandConfiguration(
+struct InitCommand: ParsableCommand {
+    static var configuration = CommandConfiguration(
         commandName: "init",
         abstract: "Initialize codegen"
     )
 
-    public init() {}
+    init() {}
 
-    public mutating func run() {
-        print("init!")
+    mutating func run() throws {
+        let initializer = RepositoryInitializer(directory: URL(fileURLWithPath: "."))
+        try initializer.run()
     }
 }
