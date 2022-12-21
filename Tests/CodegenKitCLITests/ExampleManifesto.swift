@@ -59,7 +59,7 @@ let package = Package(
 
         if hasCodegenKit {
             lines.append("""
-        .package(url: "https://github.com/omochi/CodegenKit", from: "1.2.1"),
+        .package(url: "https://github.com/omochi/CodegenKit", from: "1.2.2"),
 """)
         }
 

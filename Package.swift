@@ -52,7 +52,10 @@ let package = Package(
             capability: .command(
                 intent: .custom(
                     verb: "codegen-kit", description: "Use CodegenKit CLI"
-                )
+                ),
+                permissions: [
+                    .writeToPackageDirectory(reason: "Setup project")
+                ]
             ),
             dependencies: [
                 .target(name: "codegen-kit")
