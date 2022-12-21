@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "CodegenKit",
-    platforms: [.macOS(.v12)],
+    platforms: [.macOS(.v10_15)],
     products: [
         .library(name: "CodegenKit", targets: ["CodegenKit"]),
         .library(name: "CodeTemplateModule", targets: ["CodeTemplateModule"]),
