@@ -8,7 +8,7 @@ Add `CodegenKit` as dependency of your project.
 let package = Package(
     ...
     dependencies: [
-        .package(url: "https://github.com/omochi/CodegenKit", from: "1.2.0")
+        .package(url: "https://github.com/omochi/CodegenKit", from: "1.2.1")
     ]
     ...
 )

@@ -51,7 +51,7 @@ let package = Package(
             name: "CodegenKitPlugin",
             capability: .command(
                 intent: .custom(
-                    verb: "codegenkit", description: "Use CodegenKit CLI"
+                    verb: "codegen-kit", description: "Use CodegenKit CLI"
                 )
             ),
             dependencies: [
