@@ -13,7 +13,25 @@ final class RepositoryInitializerTests: XCTestCase {
 
         XCTAssertEqual(
             try String(contentsOf: w.path("SwiftTypeReader/Package.swift")),
-            try ExampleManifesto(hasCodegenKit: true, hasExecutable: true, hasPlugin: true).render()
+            try ExampleManifesto(hasPlatforms: true, hasCodegenKit: true, hasExecutable: true, hasPlugin: true).render()
+        )
+    }
+
+    func testOnlyDefaultLocalization() throws {
+        let w = WorkspaceBuilder()
+        try w.addFile(
+            path: "SwiftTypeReader/Package.swift",
+            string: try ExampleManifesto(hasDefaultLocalization: true).render()
+        )
+        let initializer = RepositoryInitializer(directory: w.path("SwiftTypeReader"))
+        try initializer.run()
+
+        XCTAssertEqual(
+            try String(contentsOf: w.path("SwiftTypeReader/Package.swift")),
+            try ExampleManifesto(
+                hasDefaultLocalization: true, hasPlatforms: true, hasCodegenKit: true,
+                hasExecutable: true, hasPlugin: true
+            ).render()
         )
     }
 
@@ -29,7 +47,7 @@ final class RepositoryInitializerTests: XCTestCase {
         XCTAssertEqual(
             try String(contentsOf: w.path("SwiftTypeReader/Package.swift")),
             try ExampleManifesto(
-                hasOtherDependencies: true, hasCodegenKit: true,
+                hasPlatforms: true, hasOtherDependencies: true, hasCodegenKit: true,
                 hasOtherTargets: true, hasExecutable: true, hasPlugin: true
             ).render()
         )
@@ -46,7 +64,10 @@ final class RepositoryInitializerTests: XCTestCase {
 
         XCTAssertEqual(
             try String(contentsOf: w.path("SwiftTypeReader/Package.swift")),
-            try ExampleManifesto(hasCodegenKit: true, hasExecutable: true, hasPlugin: true).render()
+            try ExampleManifesto(
+                hasPlatforms: true, hasCodegenKit: true,
+                hasExecutable: true, hasPlugin: true
+            ).render()
         )
     }
 
@@ -65,7 +86,7 @@ final class RepositoryInitializerTests: XCTestCase {
         XCTAssertEqual(
             try String(contentsOf: w.path("SwiftTypeReader/Package.swift")),
             try ExampleManifesto(
-                hasOtherDependencies: true, hasCodegenKit: true,
+                hasPlatforms: true, hasOtherDependencies: true, hasCodegenKit: true,
                 hasOtherTargets: true, hasExecutable: true, hasPlugin: true
             ).render()
         )
@@ -82,7 +103,10 @@ final class RepositoryInitializerTests: XCTestCase {
 
         XCTAssertEqual(
             try String(contentsOf: w.path("SwiftTypeReader/Package.swift")),
-            try ExampleManifesto(hasCodegenKit: true, hasExecutable: true, hasPlugin: true).render()
+            try ExampleManifesto(
+                hasPlatforms: true, hasCodegenKit: true,
+                hasExecutable: true, hasPlugin: true
+            ).render()
         )
     }
 }
