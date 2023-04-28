@@ -1,6 +1,7 @@
 import Foundation
+import SwiftOperators
 import SwiftSyntax
-import SwiftSyntaxParser
+import SwiftParser
 import SwiftFormat
 import SwiftFormatConfiguration
 import CodegenKit
@@ -26,10 +27,10 @@ struct ManifestoCode {
     var source: String
 
     mutating func format() throws {
-        let syntax = try parse()
+        let syntax = parse()
         let formatter = SwiftFormatter(configuration: formatConfiguration)
         var out = ""
-        try formatter.format(syntax: syntax, assumingFileURL: file, to: &out)
+        try formatter.format(syntax: syntax, operatorTable: OperatorTable(), assumingFileURL: file, to: &out)
         self.source = out
     }
 
@@ -71,12 +72,12 @@ struct ManifestoCode {
         }
     }
 
-    private func parse() throws -> SourceFileSyntax {
-        return try SyntaxParser.parse(source: source, filenameForDiagnostics: file.lastPathComponent)
+    private func parse() -> SourceFileSyntax {
+        return Parser.parse(source: source)
     }
 
     private func packageCall() throws -> FunctionCallExprSyntax {
-        let syntax = try self.parse()
+        let syntax = self.parse()
         return try self.packageCall(source: syntax)
     }
 
@@ -103,7 +104,7 @@ struct ManifestoCode {
             }
         }
 
-        let v = Visitor()
+        let v = Visitor(viewMode: .sourceAccurate)
         v.walk(source)
         return try v.result.unwrap("Package call")
     }
