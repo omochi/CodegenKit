@@ -1,6 +1,6 @@
 import Foundation
 import SwiftSyntax
-import SwiftSyntaxParser
+import SwiftParser
 import SwiftSyntaxBuilder
 import SwiftFormat
 import SwiftFormatConfiguration

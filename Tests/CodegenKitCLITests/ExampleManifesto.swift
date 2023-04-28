@@ -1,6 +1,7 @@
 import Foundation
+import SwiftOperators
 import SwiftSyntax
-import SwiftSyntaxParser
+import SwiftParser
 import SwiftFormat
 import SwiftFormatConfiguration
 import CodegenKitCLI
@@ -131,10 +132,10 @@ let package = Package(
 
     private func format(source: String) throws -> String {
         let file = URL(fileURLWithPath: "Package.swift")
-        let syntax = try SyntaxParser.parse(source: source, filenameForDiagnostics: file.lastPathComponent)
+        let syntax = Parser.parse(source: source)
         let formatter = SwiftFormatter(configuration: formatConfiguration)
         var out = ""
-        try formatter.format(syntax: syntax, assumingFileURL: file, to: &out)
+        try formatter.format(syntax: syntax, operatorTable: OperatorTable(), assumingFileURL: file, to: &out)
         return out
     }
 }
