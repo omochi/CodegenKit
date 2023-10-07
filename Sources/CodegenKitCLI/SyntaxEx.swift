@@ -16,7 +16,7 @@ extension AbsolutePosition {
 }
 
 extension FunctionCallExprSyntax {
-    func arg(name: String) -> TupleExprElementSyntax? {
-        return argumentList.first { $0.label?.text == name }
+    func arg(name: String) -> LabeledExprSyntax? {
+        return arguments.first { $0.label?.text == name }
     }
 }
