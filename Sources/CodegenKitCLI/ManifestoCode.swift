@@ -38,15 +38,15 @@ struct ManifestoCode {
         try source.write(to: file, atomically: true, encoding: .utf8)
     }
 
-    func nameArg() throws -> TupleExprElementSyntax? {
+    func nameArg() throws -> LabeledExprSyntax? {
         return try self.nameArg(packageCall: self.packageCall())
     }
 
-    func defaultLocalizationArg() throws -> TupleExprElementSyntax? {
+    func defaultLocalizationArg() throws -> LabeledExprSyntax? {
         return try self.defaultLocalizationArg(packageCall: self.packageCall())
     }
 
-    func platformsArg() throws -> TupleExprElementSyntax? {
+    func platformsArg() throws -> LabeledExprSyntax? {
         return try self.packageCall().arg(name: "platforms")
     }
 
@@ -93,8 +93,8 @@ struct ManifestoCode {
             override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
                 guard result == nil else { return .skipChildren }
 
-                if let ident = node.calledExpression.as(IdentifierExprSyntax.self),
-                   ident.identifier.text == "Package"
+                if let ident = node.calledExpression.as(DeclReferenceExprSyntax.self),
+                   ident.baseName.text == "Package"
                 {
                     self.result = node
                     return .skipChildren
@@ -109,11 +109,11 @@ struct ManifestoCode {
         return try v.result.unwrap("Package call")
     }
 
-    private func nameArg(packageCall: FunctionCallExprSyntax) -> TupleExprElementSyntax? {
+    private func nameArg(packageCall: FunctionCallExprSyntax) -> LabeledExprSyntax? {
         return packageCall.arg(name: "name")
     }
 
-    private func defaultLocalizationArg(packageCall: FunctionCallExprSyntax) -> TupleExprElementSyntax? {
+    private func defaultLocalizationArg(packageCall: FunctionCallExprSyntax) -> LabeledExprSyntax? {
         return packageCall.arg(name: "defaultLocalization")
     }
 
@@ -137,7 +137,7 @@ struct ManifestoCode {
         guard let call = target.expression.as(FunctionCallExprSyntax.self),
               let member = call.calledExpression.as(MemberAccessExprSyntax.self),
               member.base == nil else { return nil }
-        for arg in call.argumentList {
+        for arg in call.arguments {
             if arg.label?.text == "name" {
                 guard let string = arg.expression.as(StringLiteralExprSyntax.self),
                       string.segments.count == 1,
@@ -169,7 +169,7 @@ struct ManifestoCode {
     ) throws {
         let packageCall = try self.packageCall()
 
-        let frontArg: TupleExprElementSyntax = try {
+        let frontArg: LabeledExprSyntax = try {
             if let arg = self.defaultLocalizationArg(packageCall: packageCall) {
                 return arg
             }
