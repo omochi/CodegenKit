@@ -11,8 +11,8 @@ let package = Package(
         .plugin(name: "CodegenKitPlugin", targets: ["CodegenKitPlugin"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-format", from: "509.0.0"),
-        .package(url: "https://github.com/apple/swift-syntax", from: "509.0.0"),
+        .package(url: "https://github.com/apple/swift-format", "509.0.0"..<"999.0.0"),
+        .package(url: "https://github.com/apple/swift-syntax", "509.0.0"..<"999.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.1.4")
     ],
     targets: [
