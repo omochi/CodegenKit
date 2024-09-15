@@ -3,11 +3,10 @@ import SwiftOperators
 import SwiftSyntax
 import SwiftParser
 import SwiftFormat
-import SwiftFormatConfiguration
 import CodegenKitCLI
 
 struct ExampleManifesto {
-    var formatConfiguration: SwiftFormatConfiguration.Configuration = RepositoryInitializer.defaultFormatConfiguration
+    var formatConfiguration: SwiftFormat.Configuration = RepositoryInitializer.defaultFormatConfiguration
 
     var hasDefaultLocalization: Bool = false
     var hasPlatforms: Bool = false
@@ -135,7 +134,10 @@ let package = Package(
         let syntax = Parser.parse(source: source)
         let formatter = SwiftFormatter(configuration: formatConfiguration)
         var out = ""
-        try formatter.format(syntax: syntax, operatorTable: OperatorTable(), assumingFileURL: file, to: &out)
+        try formatter.format(
+            syntax: syntax, source: source, operatorTable: OperatorTable(),
+            assumingFileURL: file, selection: .infinite, to: &out
+        )
         return out
     }
 }

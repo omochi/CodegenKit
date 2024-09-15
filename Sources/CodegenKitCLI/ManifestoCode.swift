@@ -3,13 +3,12 @@ import SwiftOperators
 import SwiftSyntax
 import SwiftParser
 import SwiftFormat
-import SwiftFormatConfiguration
 import CodegenKit
 
 struct ManifestoCode {
     init(
         fileManager: FileManager,
-        formatConfiguration: SwiftFormatConfiguration.Configuration,
+        formatConfiguration: SwiftFormat.Configuration,
         file: URL
     ) throws {
         guard fileManager.fileExists(atPath: file.path) else {
@@ -22,7 +21,7 @@ struct ManifestoCode {
     }
 
     var fileManager: FileManager
-    var formatConfiguration: SwiftFormatConfiguration.Configuration
+    var formatConfiguration: SwiftFormat.Configuration
     var file: URL
     var source: String
 
@@ -30,7 +29,10 @@ struct ManifestoCode {
         let syntax = parse()
         let formatter = SwiftFormatter(configuration: formatConfiguration)
         var out = ""
-        try formatter.format(syntax: syntax, operatorTable: OperatorTable(), assumingFileURL: file, to: &out)
+        try formatter.format(
+            syntax: syntax, source: source, operatorTable: OperatorTable(),
+            assumingFileURL: file, selection: .infinite, to: &out
+        )
         self.source = out
     }
 
