@@ -1,11 +1,10 @@
 import Foundation
 import SwiftFormat
-import SwiftFormatConfiguration
 
 public final class CodegenRunner {
     public init(
         renderers: [any Renderer],
-        formatConfiguration: SwiftFormatConfiguration.Configuration? = nil
+        formatConfiguration: SwiftFormat.Configuration? = nil
     ) {
         self.renderers = renderers
         self.formatConfiguration = formatConfiguration ?? Self.defaultFormatCondiguration()
@@ -13,11 +12,11 @@ public final class CodegenRunner {
     }
 
     public var renderers: [any Renderer]
-    public var formatConfiguration: SwiftFormatConfiguration.Configuration
+    public var formatConfiguration: SwiftFormat.Configuration
     private let fileManager: FileManager
 
-    public static func defaultFormatCondiguration() -> SwiftFormatConfiguration.Configuration {
-        var c = SwiftFormatConfiguration.Configuration()
+    public static func defaultFormatCondiguration() -> SwiftFormat.Configuration {
+        var c = SwiftFormat.Configuration()
         c.lineLength = 10000
         c.indentation = .spaces(4)
         return c
@@ -54,7 +53,7 @@ public final class CodegenRunner {
     public func format(source: String, file: URL) throws -> String {
         let formatter = SwiftFormatter(configuration: formatConfiguration)
         var result = ""
-        try formatter.format(source: source, assumingFileURL: file, to: &result)
+        try formatter.format(source: source, assumingFileURL: file, selection: .infinite, to: &result)
         return result
     }
 
