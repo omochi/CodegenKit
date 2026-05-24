@@ -1,11 +1,11 @@
 # CodeTemplate
 
-Small library for support **in place** code generation.
-You can use this module independently from CodegenKit. 
+`CodeTemplateModule` is a small library for in-place code generation. It can be
+used independently from CodegenKit.
 
 ## Usage
 
-Write code as template with markers.
+Mark generated regions directly in a source file:
 
 ```swift
 // Visitor.swift
@@ -18,7 +18,7 @@ class Visitor {
 }
 ```
 
-Load code as template, edit, save.
+Load the file as a template, replace a placeholder, and write the file back:
 
 ```swift
 let file = URL(fileURLWithPath: "Visitor.swift")
@@ -27,7 +27,13 @@ template["visitImpl"] = generateVisitImpl()
 try template.description.write(to: file, atomically: true, encoding: .utf8)
 ```
 
-## Detail
+## Details
 
-CodeTemplate just split source file by lines.
-It doesn't see any syntax like comments, so it's target language agnostic.
+`CodeTemplate` splits the source file by lines and looks for `@codegen` and
+`@end` markers. It does not parse the surrounding language, comments, or syntax,
+so the module is language-agnostic.
+
+When a placeholder is parsed, `CodeTemplate` records the indentation of the
+`@codegen` marker line. Placeholder contents are exposed without that base
+indentation. When the template is rendered back to text, the marker indentation
+is added to each non-empty generated line.

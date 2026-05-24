@@ -32,11 +32,9 @@ final class BasicTests: XCTestCase {
             """)
         )
         XCTAssertEqual(t.fragments[safe: 1], .placeholder(
-            name: "aaa", content: """
-                func foo0() {}
-                func foo1() {}
-
-            """
+            name: "aaa",
+            indentation: "    ",
+            content: "func foo0() {}\nfunc foo1() {}\n"
         ))
         XCTAssertEqual(t.fragments[safe: 2], .text("""
                 // @end
@@ -58,11 +56,10 @@ final class BasicTests: XCTestCase {
 
         XCTAssertEqual(t.names, ["aaa"])
 
-        t["aaa"] = ("""
-                func foo2() {}
-                func foo3() {}
+        t["aaa"] = """
+            func foo2() {}
+            func foo3() {}
             """
-        )
 
         XCTAssertEqual(t.description, """
             class V {

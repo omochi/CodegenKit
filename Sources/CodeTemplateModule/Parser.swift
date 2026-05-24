@@ -15,7 +15,7 @@ final class Parser {
             }
             fragments.append(.text(text.text))
 
-            guard let placeholderName = text.nextPlaceholderName else {
+            guard let placeholder = text.nextPlaceholder else {
                 break
             }
             guard let placeholderContent = readPlaceholderFragment() else {
@@ -23,8 +23,11 @@ final class Parser {
             }
             fragments.append(
                 .placeholder(
-                    name: placeholderName,
-                    content: placeholderContent
+                    name: placeholder.name,
+                    indentation: placeholder.indentation,
+                    content: placeholderContent.removingIndentationFromNonEmptyLines(
+                        placeholder.indentation
+                    )
                 )
             )
         }
@@ -33,27 +36,30 @@ final class Parser {
 
     struct TextFragment {
         var text: String
-        var nextPlaceholderName: String?
+        var nextPlaceholder: (name: String, indentation: String)?
     }
 
     private func readTextFragment() -> TextFragment? {
         guard index < lines.count else { return nil }
 
         var text = ""
-        var placeholderName: String? = nil
+        var placeholder: (name: String, indentation: String)? = nil
         while index < lines.count {
             let line = lines[index]
             text += line
             index += 1
             if let mr = beginRegex.match(string: line) {
-                placeholderName = mr[1]
+                placeholder = (
+                    name: mr[1] ?? "",
+                    indentation: line.indentationBeforeMatch(mr)
+                )
                 break
             }
         }
 
         return TextFragment(
             text: text,
-            nextPlaceholderName: placeholderName
+            nextPlaceholder: placeholder
         )
     }
 
@@ -79,4 +85,14 @@ final class Parser {
     let endRegex = try! Regex(
         pattern: #"@end"#
     )
+}
+
+private extension String {
+    func indentationBeforeMatch(_ match: Regex.MatchResult) -> String {
+        guard let marker = match.entries.first?.range?.lowerBound else {
+            return ""
+        }
+
+        return String(self[..<marker].prefix { $0 == " " || $0 == "\t" })
+    }
 }

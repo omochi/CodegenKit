@@ -1,8 +1,8 @@
-# Setup instructions
+# Setup Instructions
 
-## Step 1. Install CodegenKit into your project
+## Step 1. Add CodegenKit To Your Package
 
-Add `CodegenKit` as dependency of your project.
+Add `CodegenKit` as a dependency of your project.
 
 ```swift
 let package = Package(
@@ -14,22 +14,20 @@ let package = Package(
 )
 ```
 
-## Step 2. Setup your project
+## Step 2. Initialize Your Project
 
-Perform command below.
+Run the initialization command:
 
+```sh
+swift package codegen-kit init
 ```
-$ swift package codegen-kit init
-```
 
-This is all that is needed to complete the required setup.
+This performs the required setup. If you prefer to configure the package
+manually, see [Setup Manually](#setup-manually).
 
-Instead of command, you can do it manually.
-In that case, see instructions described later in this document.
+## Step 3. Add Placeholders To Source Files
 
-## Step 3. Write placeholder into code
-
-Define placeholders with `@codegen` and `@end` as follows.
+Define placeholders with `// @codegen(...)` and `// @end` markers:
 
 ```swift
 // TSDecl.swift
@@ -41,14 +39,14 @@ extension TSDecl {
 }
 ```
 
-Attach name of placeholder at `@codegen`.
+The name inside `@codegen(...)` identifies the placeholder.
 
-## Step 4. Implement code renderer
+## Step 4. Implement A Renderer
 
-The init command created executable target named `codegen`.
-Add your renderer code into this.
+The init command creates an executable target named `codegen`. Add your renderer
+code to that target.
 
-Implement renderers to conform `CodegenKit.Renderer` as follows.
+Renderers conform to `CodegenKit.Renderer`:
 
 ```swift
 import Foundation
@@ -71,7 +69,7 @@ struct TSDeclRenderer: Renderer {
     }
 
     func asCasts() -> String {
-        let lines: [String] = nodes.map { (node) in
+        let lines: [String] = nodes.map { node in
             """
 public var as\(node.stem.pascal): \(node.typeName)? { self as? \(node.typeName) }
 """
@@ -81,21 +79,20 @@ public var as\(node.stem.pascal): \(node.typeName)? { self as? \(node.typeName) 
 }
 ```
 
-Specify target source code for this renderer with `isTarget` method.
+Use `isTarget(file:)` to choose which source files the renderer handles. Put the
+generation logic in `render(template:file:on:)`. The source file is provided as
+a `CodeTemplate`, and placeholders can be read or replaced through the template
+subscript.
 
-Write rendering logics into `render` method.
-Your source code are passwd as `CodeTemplate` object,
-you can edit content of placeholders via subscript.
+Render generated code from the left edge. CodegenKit reads the indentation of
+the `// @codegen(...)` marker and applies that base indentation when writing the
+generated code back to the file. Relative indentation inside the generated code
+is preserved.
 
-CodegenKit automatically format generated code by [swift-format](https://github.com/apple/swift-format).
-So you don't have to worry about precise textual control like indenting when write renderer.
+## Step 5. Register Renderers With The Runner
 
-## Step 5. Register your renderers to the runner.
-
-The init command created `main.swift` in `codegen` target.
-The codegen runner is defined in here.
-
-Edit this source to register your renderer to the runner.
+The init command creates a `main.swift` file in the `codegen` target. Register
+your renderers there:
 
 ```swift
 import CodegenKit
@@ -107,29 +104,29 @@ let dir = URL(fileURLWithPath: CommandLine.arguments[1])
 try runner.run(directories: [dir])
 ```
 
-## Step 6. Perform code generation
+## Step 6. Run Code Generation
 
-The init command created `codegen` command plugin.
-So you can perform code generation as below.
+The init command also creates a SwiftPM command plugin, so you can run:
 
+```sh
+swift package codegen
 ```
-$ swift package codegen
-```
 
-# More advanced code generation
+## More Advanced Code Generation
 
-CodegenKit initially creates `codegen` executable and plugin by the init command,
-but has no requirements for these specifications after that.
+The init command creates a `codegen` executable and command plugin as a starting
+point. After initialization, CodegenKit does not require that exact structure.
+You can change the executable, command-line interface, plugin, or renderer
+registration to fit more complex workflows.
 
-So, you can modify these targets source and build more complex code generations.
+# Setup Manually
 
-# Setup manually
+If you do not want to use the init command, configure the package with the
+following steps.
 
-To setup it manually without using the init command, do the following steps instead.
+## Step 1. Create A Codegen Executable
 
-## Step 1. Create codegen executable
-
-Create `codegen` executable target.
+Create an executable target that depends on CodegenKit.
 
 ```swift
 let package = Package(
@@ -145,9 +142,10 @@ let package = Package(
 )
 ```
 
-You can use any target name other than `codegen`.
+The target does not have to be named `codegen`; use any name that fits your
+project.
 
-Write main file that build `CodegenKit.CodegenRunner` and run it.
+Add a main file that builds and runs a `CodegenRunner`:
 
 ```swift
 import CodegenKit
@@ -159,24 +157,23 @@ let dir = URL(fileURLWithPath: CommandLine.arguments[1])
 try runner.run(directories: [dir])
 ```
 
-There are no specification about anything including command line arguments.
-Above example build as run on current working directory.
+CodegenKit does not impose any command-line argument format. The example above
+expects a directory path and runs generation in that directory.
 
-After that, you can generate code as below.
+You can then run code generation with:
 
-```
-$ swift run codegen .
-```
-
-## Step 2 (Optional). Create command plugin
-
-You can create [command plugin](https://github.com/apple/swift-evolution/blob/main/proposals/0332-swiftpm-command-plugins.md) 
-that perform previous `codegen` executable.
-
-After that, you can generate code as below.
-
-```
-$ swift package codegen
+```sh
+swift run codegen .
 ```
 
+## Step 2. Create A Command Plugin (Optional)
 
+You can also create a SwiftPM
+[command plugin](https://github.com/apple/swift-evolution/blob/main/proposals/0332-swiftpm-command-plugins.md)
+that invokes the codegen executable.
+
+With that plugin in place, you can run:
+
+```sh
+swift package codegen
+```

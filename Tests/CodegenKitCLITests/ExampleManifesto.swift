@@ -1,12 +1,12 @@
 import Foundation
-import SwiftOperators
+import SwiftBasicFormat
 import SwiftSyntax
 import SwiftParser
-import SwiftFormat
+import CodegenKit
 import CodegenKitCLI
 
 struct ExampleManifesto {
-    var formatConfiguration: SwiftFormat.Configuration = RepositoryInitializer.defaultFormatConfiguration
+    var formatConfiguration: CodegenFormatConfiguration = RepositoryInitializer.defaultFormatConfiguration
 
     var hasDefaultLocalization: Bool = false
     var hasPlatforms: Bool = false
@@ -130,14 +130,11 @@ let package = Package(
     }
 
     private func format(source: String) throws -> String {
-        let file = URL(fileURLWithPath: "Package.swift")
         let syntax = Parser.parse(source: source)
-        let formatter = SwiftFormatter(configuration: formatConfiguration)
-        var out = ""
-        try formatter.format(
-            syntax: syntax, source: source, operatorTable: OperatorTable(),
-            assumingFileURL: file, selection: .infinite, to: &out
+        let format = BasicFormat(
+            indentationWidth: .spaces(formatConfiguration.indentationSpaces),
+            viewMode: .fixedUp
         )
-        return out
+        return syntax.formatted(using: format).description
     }
 }

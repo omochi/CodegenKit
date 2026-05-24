@@ -2,13 +2,12 @@ import Foundation
 import SwiftSyntax
 import SwiftParser
 import SwiftSyntaxBuilder
-import SwiftFormat
 import CodegenKit
 
 public struct RepositoryInitializer {
     public init(
         directory: URL,
-        formatConfiguration: SwiftFormat.Configuration = Self.defaultFormatConfiguration
+        formatConfiguration: CodegenFormatConfiguration = Self.defaultFormatConfiguration
     ) {
         self.directory = directory
         self.formatConfiguration = formatConfiguration
@@ -16,13 +15,10 @@ public struct RepositoryInitializer {
     }
 
     public var directory: URL
-    public var formatConfiguration: SwiftFormat.Configuration
+    public var formatConfiguration: CodegenFormatConfiguration
 
-    public static var defaultFormatConfiguration: SwiftFormat.Configuration {
-        var c = Configuration()
-        c.lineLength = 10000
-        c.indentation = .spaces(4)
-        return c
+    public static var defaultFormatConfiguration: CodegenFormatConfiguration {
+        CodegenFormatConfiguration()
     }
 
     private var fileManager: FileManager
