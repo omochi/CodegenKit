@@ -1,10 +1,11 @@
 import Foundation
-import SwiftFormat
+import SwiftBasicFormat
+import SwiftParser
 
 public final class CodegenRunner {
     public init(
         renderers: [any Renderer],
-        formatConfiguration: SwiftFormat.Configuration? = nil
+        formatConfiguration: CodegenFormatConfiguration? = nil
     ) {
         self.renderers = renderers
         self.formatConfiguration = formatConfiguration ?? Self.defaultFormatCondiguration()
@@ -12,14 +13,11 @@ public final class CodegenRunner {
     }
 
     public var renderers: [any Renderer]
-    public var formatConfiguration: SwiftFormat.Configuration
+    public var formatConfiguration: CodegenFormatConfiguration
     private let fileManager: FileManager
 
-    public static func defaultFormatCondiguration() -> SwiftFormat.Configuration {
-        var c = SwiftFormat.Configuration()
-        c.lineLength = 10000
-        c.indentation = .spaces(4)
-        return c
+    public static func defaultFormatCondiguration() -> CodegenFormatConfiguration {
+        CodegenFormatConfiguration()
     }
 
     public func run(directories: [URL]) throws {
@@ -51,10 +49,12 @@ public final class CodegenRunner {
     }
 
     public func format(source: String, file: URL) throws -> String {
-        let formatter = SwiftFormatter(configuration: formatConfiguration)
-        var result = ""
-        try formatter.format(source: source, assumingFileURL: file, selection: .infinite, to: &result)
-        return result
+        let syntax = Parser.parse(source: source)
+        let format = BasicFormat(
+            indentationWidth: .spaces(formatConfiguration.indentationSpaces),
+            viewMode: .fixedUp
+        )
+        return syntax.formatted(using: format).description
     }
 
     public func writeIfChanged(data: Data, file: URL) throws {

@@ -1,14 +1,13 @@
 import Foundation
-import SwiftOperators
+import SwiftBasicFormat
 import SwiftSyntax
 import SwiftParser
-import SwiftFormat
 import CodegenKit
 
 struct ManifestoCode {
     init(
         fileManager: FileManager,
-        formatConfiguration: SwiftFormat.Configuration,
+        formatConfiguration: CodegenFormatConfiguration,
         file: URL
     ) throws {
         guard fileManager.fileExists(atPath: file.path) else {
@@ -21,19 +20,18 @@ struct ManifestoCode {
     }
 
     var fileManager: FileManager
-    var formatConfiguration: SwiftFormat.Configuration
+    var formatConfiguration: CodegenFormatConfiguration
     var file: URL
     var source: String
 
     mutating func format() throws {
-        let syntax = parse()
-        let formatter = SwiftFormatter(configuration: formatConfiguration)
-        var out = ""
-        try formatter.format(
-            syntax: syntax, source: source, operatorTable: OperatorTable(),
-            assumingFileURL: file, selection: .infinite, to: &out
+        let source = source.removingLeadingWhitespaceFromNonEmptyLines()
+        let syntax = Parser.parse(source: source)
+        let format = BasicFormat(
+            indentationWidth: .spaces(formatConfiguration.indentationSpaces),
+            viewMode: .fixedUp
         )
-        self.source = out
+        self.source = syntax.formatted(using: format).description
     }
 
     func write() throws {
@@ -198,7 +196,7 @@ struct ManifestoCode {
             if let last = dependencies.elements.last {
                 return try last.endPosition.samePosition(in: source)
             }
-            return try dependencies.rightSquare.positionAfterSkippingLeadingTrivia.samePosition(in: source)
+            return try dependencies.rightSquare.position.samePosition(in: source)
         }()
 
         var patch = """
@@ -225,6 +223,7 @@ struct ManifestoCode {
             ]
         ),
         """
+
         self.source.insert(contentsOf: "\n" + patch, at: position)
     }
 
@@ -269,4 +268,15 @@ struct ManifestoCode {
         self.source.insert(contentsOf: patch, at: position)
     }
 
+}
+
+private extension String {
+    func removingLeadingWhitespaceFromNonEmptyLines() -> String {
+        splitLines().map { line in
+            guard line.contains(where: { !$0.isNewline }) else {
+                return line
+            }
+            return String(line.drop(while: { $0 == " " || $0 == "\t" }))
+        }.joined()
+    }
 }

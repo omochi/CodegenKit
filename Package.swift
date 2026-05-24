@@ -11,7 +11,6 @@ let package = Package(
         .plugin(name: "CodegenKitPlugin", targets: ["CodegenKitPlugin"])
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-format.git", "600.0.0"..<"999.0.0"),
         .package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0"..<"999.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0")
     ],
@@ -23,7 +22,8 @@ let package = Package(
         .target(
             name: "CodegenKit",
             dependencies: [
-                .product(name: "SwiftFormat", package: "swift-format"),
+                .product(name: "SwiftBasicFormat", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
                 .target(name: "CodeTemplateModule")
             ]
         ),
@@ -36,7 +36,7 @@ let package = Package(
             dependencies: [
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
-                .product(name: "SwiftFormat", package: "swift-format"),
+                .product(name: "SwiftBasicFormat", package: "swift-syntax"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .target(name: "CodegenKit")
             ]
@@ -64,6 +64,9 @@ let package = Package(
         .testTarget(
             name: "CodegenKitCLITests",
             dependencies: [
+                .product(name: "SwiftBasicFormat", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
+                .target(name: "CodegenKit"),
                 .target(name: "CodegenKitCLI")
             ]
         )

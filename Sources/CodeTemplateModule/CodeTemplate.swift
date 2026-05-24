@@ -3,7 +3,7 @@ import Foundation
 public struct CodeTemplate: CustomStringConvertible {
     enum Fragment: Hashable {
         case text(String)
-        case placeholder(name: String, content: String)
+        case placeholder(name: String, indentation: String, content: String)
 
         var text: String? {
             switch self {
@@ -14,9 +14,18 @@ public struct CodeTemplate: CustomStringConvertible {
 
         var placeholder: (name: String, content: String)? {
             switch self {
-            case .placeholder(name: let name, content: let content):
+            case .placeholder(name: let name, _, content: let content):
                 return (name: name, content: content)
             default: return nil
+            }
+        }
+
+        var placeholderIndentation: String? {
+            switch self {
+            case .placeholder(_, indentation: let indentation, _):
+                return indentation
+            default:
+                return nil
             }
         }
     }
@@ -45,7 +54,7 @@ public struct CodeTemplate: CustomStringConvertible {
         for (index, fragment) in fragments.enumerated() {
             switch fragment {
             case .text: break
-            case .placeholder(name: let name, _):
+            case .placeholder(name: let name, _, _):
                 indexMap[name] = index
             }
         }
@@ -63,7 +72,12 @@ public struct CodeTemplate: CustomStringConvertible {
         }
         set {
             guard let index = indexMap[name] else { return }
-            fragments[index] = .placeholder(name: name, content: newValue ?? "")
+            let indentation = fragments[index].placeholderIndentation ?? ""
+            fragments[index] = .placeholder(
+                name: name,
+                indentation: indentation,
+                content: newValue ?? ""
+            )
         }
     }
 
@@ -73,12 +87,36 @@ public struct CodeTemplate: CustomStringConvertible {
         for fragment in fragments {
             switch fragment {
             case .text(let text): result += text
-            case .placeholder(_, content: let text):
-                result += text.ensuringNewline()
+            case .placeholder(_, indentation: let indentation, content: let text):
+                result += text.ensuringNewline().indentingNonEmptyLines(with: indentation)
             }
         }
 
         return result
+    }
+}
+
+extension String {
+    func indentingNonEmptyLines(with indentation: String) -> String {
+        guard !indentation.isEmpty else { return self }
+        return splitLines().map { line in
+            line.contains { $0 != .lf && $0 != .cr && $0 != .crlf }
+                ? indentation + line
+                : line
+        }.joined()
+    }
+
+    func removingIndentationFromNonEmptyLines(_ indentation: String) -> String {
+        guard !indentation.isEmpty else { return self }
+        return splitLines().map { line in
+            guard line.contains(where: { $0 != .lf && $0 != .cr && $0 != .crlf }) else {
+                return line
+            }
+            guard line.hasPrefix(indentation) else {
+                return line
+            }
+            return String(line.dropFirst(indentation.count))
+        }.joined()
     }
 }
 

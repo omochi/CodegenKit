@@ -1,11 +1,12 @@
-# CodegenKit: Swift code generation framework
+# CodegenKit: a Swift code generation framework
 
-This is a framework for introducing code generation on your Swift project.
-You can do meta-programming like below.
+CodegenKit helps you add lightweight code generation to Swift projects. It lets
+you keep generated code directly in your Swift source files, while still making
+the generated regions easy to update.
 
-## Code becomes template as it is
+## Swift Code As The Template
 
-Placeholders are defined by markers in Swift code as follows.
+Placeholders are marked directly in Swift source code:
 
 ```swift
 protocol TSDecl {}
@@ -16,14 +17,14 @@ extension TSDecl {
 }
 ```
 
-Generated codes are inserted in area between markers.
+Generated code is written between the `// @codegen(...)` and `// @end` markers.
+CodegenKit does not require separate template files; your Swift source files are
+the templates.
 
-Thus, CodegenKit doesn't use any specific template files.
-Instead, Swift source codes are used as a template.
+## Write Renderers In Swift
 
-## Write code renderer in Swift
-
-Write code renderer as follows.
+A renderer decides which files it handles and writes generated code into named
+placeholders.
 
 ```swift
 import Foundation
@@ -46,7 +47,7 @@ struct TSDeclRenderer: Renderer {
     }
 
     func asCasts() -> String {
-        let lines: [String] = nodes.map { (node) in
+        let lines: [String] = nodes.map { node in
             """
 public var as\(node.stem.pascal): \(node.typeName)? { self as? \(node.typeName) }
 """
@@ -56,19 +57,49 @@ public var as\(node.stem.pascal): \(node.typeName)? { self as? \(node.typeName) 
 }
 ```
 
-Your source code are passed as `CodeTemplate` object.
-You can edit contents of placeholder via subscript.
+Source files are passed to renderers as `CodeTemplate` values. You can read and
+replace each placeholder through the template subscript.
 
-## Do code generation
+## Indentation
 
-After writing renderers, generate codes.
-Perform code generation with following command.
+CodegenKit uses the indentation of the `// @codegen(...)` marker as the base
+indentation for generated code.
 
+For example, this marker is indented by four spaces:
+
+```swift
+extension TSDecl {
+    // @codegen(as)
+    // @end
+}
 ```
-$ swift package codegen
+
+Every non-empty line assigned to `template["as"]` is written with those four
+spaces added.
+
+Renderers should generate code from the left edge, without the marker's base
+indentation:
+
+```swift
+template["as"] = """
+public var asClass: TSClassDecl? { self as? TSClassDecl }
+public var asField: TSFieldDecl? { self as? TSFieldDecl }
+"""
 ```
 
-Previous code will be edited as follows.
+Keep relative indentation inside generated code. CodegenKit adds the marker's
+base indentation to each non-empty line, but it does not infer or rewrite the
+internal indentation of the generated code.
+
+## Run Code Generation
+
+After writing renderers, run code generation with:
+
+```sh
+swift package codegen
+```
+
+The source file is updated in place:
 
 ```swift
 // TSDecl.swift
@@ -90,12 +121,9 @@ extension TSDecl {
 }
 ```
 
-Let's start and enjoy code generation!
-Please read [this document](Docs/init.md) for detailed setup instructions.
+For setup details, see [Setup instructions](Docs/init.md).
 
-# Documents
+## Documents
 
 - [Setup instructions](Docs/init.md)
 - [CodeTemplateModule sublibrary](Docs/CodeTemplateModule.md)
-
-
