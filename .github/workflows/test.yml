@@ -1,0 +1,31 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: "test (swift-syntax: ${{ matrix.swift-syntax-version }})"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-syntax-version:
+          - "600.0.0..<601.0.0"
+          - "601.0.0..<602.0.0"
+          - "602.0.0..<603.0.0"
+          - "603.0.0..<604.0.0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: vapor/swiftly-action@v0.2
+        with:
+          toolchain: "6.3"
+
+      - name: Test
+        run: swift test
+        env:
+          CODEGENKIT_SWIFTSYNTAX_VERSION: ${{ matrix.swift-syntax-version }}
