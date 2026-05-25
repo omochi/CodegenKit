@@ -7,7 +7,7 @@ public func main() {
 }
 
 struct CodegenKitCommand: ParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
         commandName: "codegen-kit",
         abstract: "CodegenKit CLI tool",
         version: CodegenKit.Module.version,
@@ -20,7 +20,7 @@ struct CodegenKitCommand: ParsableCommand {
 }
 
 struct InitCommand: ParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
         commandName: "init",
         abstract: "Initialize codegen"
     )

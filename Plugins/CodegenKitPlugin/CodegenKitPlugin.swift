@@ -7,8 +7,7 @@ struct CodegenKitPlugin: CommandPlugin {
         let tool = try context.tool(named: "codegen-kit")
 
         let process = EasyProcess(
-            path: URL(fileURLWithPath: tool.path.string),
-            args: arguments
+            path: tool.url, args: arguments
         )
         try process.run()
     }
