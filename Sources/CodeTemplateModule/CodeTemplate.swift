@@ -31,7 +31,7 @@ public struct CodeTemplate: CustomStringConvertible {
     }
 
     public init(file: URL) throws {
-        let string = try String(contentsOf: file)
+        let string = try String(contentsOf: file, encoding: .utf8)
         self.init(string: string)
     }
 
