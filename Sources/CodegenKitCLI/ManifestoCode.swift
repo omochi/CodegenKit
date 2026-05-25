@@ -29,7 +29,7 @@ struct ManifestoCode {
         let syntax = Parser.parse(source: source)
         let format = BasicFormat(
             indentationWidth: .spaces(formatConfiguration.indentationSpaces),
-            viewMode: .fixedUp
+            viewMode: .sourceAccurate
         )
         self.source = syntax.formatted(using: format).description
     }
