@@ -15,13 +15,13 @@ import PackagePlugin
 @main
 struct \(pluginName): CommandPlugin {
     func performCommand(context: PluginContext, arguments: [String]) async throws {
-        let tool = try context.tool(named: "\(executableName)")
+        let codegen = try context.tool(named: "\(executableName)")
 
-        let sourcesDir = context.package.directory.appending(subpath: "Sources")
+        let sourcesDir = context.package.directoryURL.appending(path: "Sources")
 
         let process = EasyProcess(
-            path: URL(fileURLWithPath: tool.path.string),
-            args: [sourcesDir.string]
+            path: codegen.url,
+            args: [sourcesDir.description]
         )
         try process.run()
     }
@@ -35,8 +35,8 @@ struct EasyProcess {
     init(
         path: URL,
         args: [String],
-        outSink: ((Data) -> Void)? = nil,
-        errorSink: ((Data) -> Void)? = nil
+        outSink: (@Sendable (Data) -> Void)? = nil,
+        errorSink: (@Sendable (Data) -> Void)? = nil
     ) {
         self.path = path
         self.args = args
@@ -46,20 +46,20 @@ struct EasyProcess {
 
     var path: URL
     var args: [String]
-    var outSink: (Data) -> Void
-    var errorSink: (Data) -> Void
+    var outSink: @Sendable (Data) -> Void
+    var errorSink: @Sendable (Data) -> Void
 
-    static func makeFileHandleSink(fileHandle: FileHandle) -> (Data) -> Void {
+    static func makeFileHandleSink(fileHandle: FileHandle) -> @Sendable (Data) -> Void {
         return { (data) in
             try? fileHandle.write(contentsOf: data)
         }
     }
 
-    static var defaultOutSink: (Data) -> Void {
+    static var defaultOutSink: @Sendable (Data) -> Void {
         makeFileHandleSink(fileHandle: .standardOutput)
     }
 
-    static var defaultErrorSink: (Data) -> Void {
+    static var defaultErrorSink: @Sendable (Data) -> Void {
         makeFileHandleSink(fileHandle: .standardError)
     }
 
@@ -74,7 +74,7 @@ struct EasyProcess {
         let outPipe = Pipe()
         p.standardOutput = outPipe
 
-        outPipe.fileHandleForReading.readabilityHandler = { (h) in
+        outPipe.fileHandleForReading.readabilityHandler = { [outSink] (h) in
             queue.sync {
                 let data = h.availableData
                 if !data.isEmpty {
@@ -86,7 +86,7 @@ struct EasyProcess {
         let errPipe = Pipe()
         p.standardError = errPipe
 
-        errPipe.fileHandleForReading.readabilityHandler = { (h) in
+        errPipe.fileHandleForReading.readabilityHandler = { [errorSink] (h) in
             queue.sync {
                 let data = h.availableData
                 if !data.isEmpty {
