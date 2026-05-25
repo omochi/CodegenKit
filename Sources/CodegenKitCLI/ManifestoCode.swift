@@ -16,7 +16,7 @@ struct ManifestoCode {
         self.fileManager = fileManager
         self.formatConfiguration = formatConfiguration
         self.file = file
-        self.source = try String(contentsOf: file)
+        self.source = try String(contentsOf: file, encoding: .utf8)
     }
 
     var fileManager: FileManager
