@@ -52,7 +52,7 @@ public final class CodegenRunner {
         let syntax = Parser.parse(source: source)
         let format = BasicFormat(
             indentationWidth: .spaces(formatConfiguration.indentationSpaces),
-            viewMode: .fixedUp
+            viewMode: .sourceAccurate
         )
         return syntax.formatted(using: format).description
     }
